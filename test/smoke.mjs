@@ -256,6 +256,11 @@ page.appEl.click({ dataset: { action: 'levelSetLevel', value: '1' } });
 page.appEl.click({ dataset: { action: 'levelStart' } });
 check('round screen rendered', page.appEl.innerHTML.includes('= ?'));
 
+/* Keypresses and advances must patch the DOM in place; only the final
+ *  navigation to results is a full re-render (flicker regression). */
+let levelRefreshes = 0;
+const origLevelRefresh = page.ctx.Mates.router.refresh;
+page.ctx.Mates.router.refresh = function () { levelRefreshes++; return origLevelRefresh.apply(this, arguments); };
 for (let i = 0; i < 10; i++) {
   const s = page.ctx.Mates.round.peek();
   String(s.question.answer).split('').forEach(d =>
@@ -263,6 +268,8 @@ for (let i = 0; i < 10; i++) {
   page.appEl.click({ dataset: { action: 'keypad', key: 'enter' } });
   page.flushTimers(); // fire the feedback-delay advance
 }
+check('only the results navigation re-renders during a round', levelRefreshes === 1);
+page.ctx.Mates.router.refresh = origLevelRefresh;
 check('results screen shows 10 / 10', page.appEl.innerHTML.includes('10 / 10'));
 check('points shown (+100, ES)', page.appEl.innerHTML.includes('+100 puntos'));
 let d = page.ctx.Mates.profileData.get(max.id);
@@ -345,12 +352,18 @@ check('instant confirm: score 3 without waiting', t.score === 3 && t.timeLeft ==
 answer(false);
 check('wrong answer keeps score at 3', page.ctx.Mates.round.peek().score === 3);
 
-/* Ticks must update the clock in place, not re-render the screen (flicker fix). */
+/* Ticks and key presses must update the screen in place, not re-render it:
+ *  a full innerHTML swap per event makes the round visibly flicker. */
 let refreshes = 0;
 const origRefresh = page.ctx.Mates.router.refresh;
 page.ctx.Mates.router.refresh = function () { refreshes++; return origRefresh.apply(this, arguments); };
 for (let i = 0; i < 59; i++) page.ctx.Mates.round.tick();
 check('timer ticks do not re-render the round screen', refreshes === 0);
+['1', '2', '3'].forEach(d => page.appEl.click({ dataset: { action: 'keypad', key: d } }));
+page.appEl.click({ dataset: { action: 'keypad', key: 'back' } });
+page.appEl.click({ dataset: { action: 'keypad', key: 'back' } });
+page.appEl.click({ dataset: { action: 'keypad', key: 'back' } });
+check('keypad presses do not re-render the round screen', refreshes === 0);
 page.ctx.Mates.router.refresh = origRefresh;
 check('one second left before end', page.ctx.Mates.round.peek().timeLeft === 1);
 page.ctx.Mates.round.tick();

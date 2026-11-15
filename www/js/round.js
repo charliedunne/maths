@@ -77,16 +77,48 @@ Mates.round = (function () {
     if (!r || !r.timed) return;
     r.timeLeft--;
     if (r.timeLeft <= 0) finish();
-    else updateClock();
+    else patchTimer();
   }
 
-  /** Update clock + score in place. Re-rendering the whole screen on every
-   *  tick replaces all DOM nodes and makes the round visibly flicker. */
-  function updateClock() {
-    const clock = document.getElementById('roundTimer');
-    if (clock) clock.textContent = '⏱ ' + r.timeLeft;
+  /* The round screen is rendered once on entry; every later update patches
+   *  the existing nodes in place. A full innerHTML swap per tick or keypress
+   *  replaces all DOM nodes and makes the screen visibly flicker. */
+
+  /** Update the countdown text in place. */
+  function patchTimer() {
+    const el = document.getElementById('roundTimer');
+    if (el) el.textContent = '⏱ ' + r.timeLeft;
+  }
+
+  /** Update only the answer display in place (digit / backspace presses). */
+  function patchAnswer() {
+    const el = document.getElementById('roundAnswer');
+    if (el) el.innerHTML = r.input || '&nbsp;';
+  }
+
+  /** Update every dynamic part of the round screen in place after an
+   *  answer or advance. */
+  function patchRound() {
+    const timer = document.getElementById('roundTimer');
+    if (timer) timer.textContent = r.timed ? '⏱ ' + r.timeLeft : (r.index + 1) + ' / ' + r.count;
     const score = document.getElementById('roundScore');
     if (score) score.textContent = String(r.score);
+    const chip = document.getElementById('roundLevelChip');
+    if (chip) chip.textContent = Mates.t('round.level', { n: r.level });
+    const q = currentQuestion();
+    const question = document.getElementById('roundQuestion');
+    if (question && q) question.textContent = q.a + ' ' + q.op + ' ' + q.b + ' = ?';
+    patchAnswer();
+    const fb = document.getElementById('roundFeedback');
+    if (fb) {
+      if (r.feedback) {
+        fb.className = 'round-feedback ' + (r.feedback.type === 'ok' ? 'fb-ok' : 'fb-no');
+        fb.textContent = r.feedback.text;
+      } else {
+        fb.className = 'round-feedback';
+        fb.textContent = '';
+      }
+    }
   }
 
   /** Keypad input: digit string, 'back' or 'enter'. */
@@ -100,7 +132,7 @@ Mates.round = (function () {
     } else {
       if (r.input.length < 4) r.input += action;
     }
-    render();
+    patchAnswer();
   }
 
   function submit() {
@@ -140,7 +172,7 @@ Mates.round = (function () {
     r.locked = true;
     r.feedback = correct ? { type: 'ok', text: praiseText() }
       : { type: 'no', text: Mates.t('feedback.wrong', { n: q.answer }) };
-    render();
+    patchRound();
     setTimeout(advance, 1000);
   }
 
@@ -155,7 +187,7 @@ Mates.round = (function () {
       finish();
       return;
     }
-    render();
+    patchRound();
   }
 
   function finish() {
@@ -210,7 +242,7 @@ Mates.round = (function () {
 
     /* Subtle current-level indicator, adaptive rounds only. */
     const levelChip = s.adaptive
-      ? '<div class="level-chip">' + Mates.t('round.level', { n: s.level }) + '</div>'
+      ? '<div class="level-chip" id="roundLevelChip">' + Mates.t('round.level', { n: s.level }) + '</div>'
       : '';
 
     let keypad = '';
@@ -222,9 +254,9 @@ Mates.round = (function () {
               '<button class="key key-go" data-action="keypad" data-key="enter">✓</button>';
 
     const feedback = s.feedback
-      ? '<div class="round-feedback ' + (s.feedback.type === 'ok' ? 'fb-ok' : 'fb-no') + '">' +
+      ? '<div class="round-feedback ' + (s.feedback.type === 'ok' ? 'fb-ok' : 'fb-no') + '" id="roundFeedback">' +
         Mates.esc(s.feedback.text) + '</div>'
-      : '<div class="round-feedback"></div>';
+      : '<div class="round-feedback" id="roundFeedback"></div>';
 
     return '' +
       '<header class="header">' +
@@ -235,9 +267,9 @@ Mates.round = (function () {
 
       '<div class="card round-card">' +
         levelChip +
-        '<div class="round-question">' + s.question.a + ' ' + s.question.op + ' ' +
+        '<div class="round-question" id="roundQuestion">' + s.question.a + ' ' + s.question.op + ' ' +
           s.question.b + ' = ?</div>' +
-        '<div class="round-answer">' + (s.input || '&nbsp;') + '</div>' +
+        '<div class="round-answer" id="roundAnswer">' + (s.input || '&nbsp;') + '</div>' +
         feedback +
       '</div>' +
 

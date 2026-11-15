@@ -8,13 +8,14 @@
 
 ## Current status
 - Step in progress: **Step 9 — Capacitor → Android APK**
-- Last updated: 2026-11-15 — Steps 1–8 complete; Step 9 scaffold done (www/ layout, android platform added, Mates launcher icons rendered) — APK build pending a machine with Java 17 + Android SDK. 127 smoke assertions pass
+- Last updated: 2026-11-15 — Steps 1–8 complete; Step 9 scaffold done (www/ layout, android platform added, Mates launcher icons rendered) — APK build pending a machine with Java 17 + Android SDK. Round-screen flicker fix extended to keypad/answer updates (in-place DOM patching, see Corrections). 130 smoke assertions pass
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
 - **Shared round engine**: added `js/round.js` (not in the original layout) — one round engine + round/results screens shared by level, adaptive and timed modes. Modes register in `Mates.modes` (home renders them) and pass a cfg to `Mates.round.start()`. Load order: questions → round → modes → app; all files merge into `Mates.screens`/`Mates.actions` instead of overwriting.
 - **Testing**: no browser available in the dev environment — verification uses `test/smoke.mjs` (Node vm + fake DOM + shared localStorage stub, controllable setTimeout/setInterval), run with `node test/smoke.mjs`. Visual/real-device checks are left to the user.
 - **webDir = `www/`** (user-approved): Capacitor 8 rejects `webDir: "."` (`checkWebDir` in `@capacitor/cli` bans `''`, `'.'`, `'..'`, `'../'`, `'./'`), so all web assets moved into `www/` (index.html, js/, css/, icons/, manifest.json, sw.js) and `webDir: "www"`. Side benefit: server deployment is just "serve `www/`". Smoke harness reads app files from `WEB = ROOT/www`.
+- **In-place round updates (flicker fix)**: the round screen is fully rendered only once on entry (`router.go('round')`). Every later update patches existing nodes in place — `patchTimer()` (clock), `patchAnswer()` (digit/backspace presses) and `patchRound()` (after submit/advance: counter/clock, score chip, level chip, question, answer, feedback) targeting IDs `#roundTimer`, `#roundScore`, `#roundLevelChip`, `#roundQuestion`, `#roundAnswer`, `#roundFeedback`. A full innerHTML swap per tick or keypress replaced all DOM nodes and made the screen visibly blink. Regression: smoke.mjs wraps a full 10-question level round and the timed tick/keypad loops in a `router.refresh` spy — exactly one re-render (results navigation) and zero respectively.
 
 ---
 

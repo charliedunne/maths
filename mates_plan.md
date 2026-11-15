@@ -8,12 +8,13 @@
 
 ## Current status
 - Step in progress: **Step 9 — Capacitor → Android APK**
-- Last updated: 2026-11-15 — Steps 1–8 complete (scaffold, i18n, themes, profiles, avatar builder, question generators, level/adaptive/timed modes, gamification, PWA, onboarding + WebAudio sound + QA edge cases; 127 smoke assertions pass)
+- Last updated: 2026-11-15 — Steps 1–8 complete; Step 9 scaffold done (www/ layout, android platform added, Mates launcher icons rendered) — APK build pending a machine with Java 17 + Android SDK. 127 smoke assertions pass
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
 - **Shared round engine**: added `js/round.js` (not in the original layout) — one round engine + round/results screens shared by level, adaptive and timed modes. Modes register in `Mates.modes` (home renders them) and pass a cfg to `Mates.round.start()`. Load order: questions → round → modes → app; all files merge into `Mates.screens`/`Mates.actions` instead of overwriting.
 - **Testing**: no browser available in the dev environment — verification uses `test/smoke.mjs` (Node vm + fake DOM + shared localStorage stub, controllable setTimeout/setInterval), run with `node test/smoke.mjs`. Visual/real-device checks are left to the user.
+- **webDir = `www/`** (user-approved): Capacitor 8 rejects `webDir: "."` (`checkWebDir` in `@capacitor/cli` bans `''`, `'.'`, `'..'`, `'../'`, `'./'`), so all web assets moved into `www/` (index.html, js/, css/, icons/, manifest.json, sw.js) and `webDir: "www"`. Side benefit: server deployment is just "serve `www/`". Smoke harness reads app files from `WEB = ROOT/www`.
 
 ---
 
@@ -194,12 +195,19 @@ Notes (Step 8):
 - SW cache bumped to `mates-v2` (sound.js added to precache).
 
 ### Step 9 — Capacitor → Android APK (after web app is done)
-- [ ] `package.json` with `@capacitor/core`, `@capacitor/cli`, `@capacitor/android` (tooling only — app code stays dependency-free)
-- [ ] `capacitor.config.json`: appId `com.cavt.mates`, appName "Mates", webDir = app root
-- [ ] `npx cap add android`; copy web assets
-- [ ] Android name + adaptive icon from the PWA icon set
+- [x] `package.json` with `@capacitor/core`, `@capacitor/cli`, `@capacitor/android` (tooling only — app code stays dependency-free)
+- [x] `capacitor.config.json`: appId `com.cavt.mates`, appName "Mates", webDir = app root
+- [x] `npx cap add android`; copy web assets
+- [x] Android name + adaptive icon from the PWA icon set
 - [ ] Build debug APK (Gradle); verify install, offline behavior, and both themes on a device/emulator
 - [ ] `git commit`
+
+Notes (Step 9):
+- Capacitor 8.6.2 (`@capacitor/cli`, `core`, `android`). Scripts: `npm run cap:sync`, `npm run cap:open`.
+- webDir is `"www"` — see Corrections above (Capacitor rejects `"."`; user approved the www/ restructure).
+- `android/` source is committed; build artifacts ignored via `.gitignore` (`android/.gradle/`, `android/build/`, `android/app/build/`, `android/local.properties`).
+- Launcher icons: sources in `www/icons/android/` — `foreground.svg` (transparent, M+dot scaled 0.70× about centre so all ink fits the 66dp safe zone), `square.svg` + `round.svg` (full-bleed terracotta, pre-API-26 fallbacks). Rendered with rsvg-convert into `mipmap-{mdpi…xxxhdpi}`: foreground 108/162/216/324/432 px, square+round 48/72/96/144/192 px. Adaptive background color = #ef7d54 (`values/ic_launcher_background.xml`).
+- Box 5 blocked on this machine: no Java, no Android SDK (ANDROID_HOME unset). Build later with `npm run cap:sync && cd android && ./gradlew assembleDebug` on a machine with JDK 17 + Android SDK; then install and verify offline behavior + both themes.
 
 ---
 

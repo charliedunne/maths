@@ -1,0 +1,8 @@
+{
+  "appId": "com.cavt.mates",
+  "appName": "Mates",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

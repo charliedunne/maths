@@ -7,6 +7,8 @@ import vm from 'node:vm';
 import path from 'node:path';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+/* Web assets live in www/ (Capacitor webDir); the harness loads from there. */
+const WEB = path.join(ROOT, 'www');
 const SCRIPTS = [
   'js/i18n/en.js',
   'js/i18n/es.js',
@@ -89,7 +91,7 @@ function loadPage({ browserLang = 'en-US', systemDark = false } = {}) {
   vm.createContext(sandbox);
 
   for (const rel of SCRIPTS) {
-    const code = readFileSync(path.join(ROOT, rel), 'utf8');
+    const code = readFileSync(path.join(WEB, rel), 'utf8');
     vm.runInContext(code, sandbox, { filename: rel });
   }
 
@@ -523,20 +525,20 @@ check('welcome screen in ES on fresh device',
 /* ---------- Step 7: PWA files (static checks, no browser needed) ---------- */
 console.log('step 7 (pwa)');
 {
-  const manifest = JSON.parse(readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
+  const manifest = JSON.parse(readFileSync(path.join(WEB, 'manifest.json'), 'utf8'));
   check('manifest: name Mates + standalone', manifest.name === 'Mates' && manifest.display === 'standalone');
   const iconPurposes = manifest.icons.map(i => i.sizes + ':' + i.purpose);
   check('manifest: 192+512 any and maskable icons',
     ['192x192:any', '512x512:any', '192x192:maskable', '512x512:maskable'].every(p => iconPurposes.includes(p)));
 
-  const swSrc = readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+  const swSrc = readFileSync(path.join(WEB, 'sw.js'), 'utf8');
   const arrBlock = swSrc.match(/const ASSETS = \[([\s\S]*?)\]/)[1];
   const assets = [...arrBlock.matchAll(/'([^']+)'/g)].map(m => m[1].replace(/^\.\//, ''));
   check('sw precaches a non-empty asset list', assets.length >= 20);
-  const missing = assets.filter(a => !existsSync(path.join(ROOT, a)));
+  const missing = assets.filter(a => !existsSync(path.join(WEB, a)));
   check('sw precache list matches files on disk' + (missing.length ? ' (missing: ' + missing.join(', ') + ')' : ''), missing.length === 0);
 
-  const html = readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const html = readFileSync(path.join(WEB, 'index.html'), 'utf8');
   check('index.html links manifest + theme-color', html.includes('rel="manifest"') && html.includes('name="theme-color"'));
 }
 
@@ -546,9 +548,9 @@ console.log('step 8 (i18n parity)');
   const jsDirs = ['js', 'js/modes'];
   const used = new Set();
   for (const dir of jsDirs) {
-    for (const f of readdirSync(path.join(ROOT, dir))) {
+    for (const f of readdirSync(path.join(WEB, dir))) {
       if (!f.endsWith('.js')) continue;
-      const src = readFileSync(path.join(ROOT, dir, f), 'utf8');
+      const src = readFileSync(path.join(WEB, dir, f), 'utf8');
       // Only fully-literal calls: key immediately followed by ")".
       // Concatenated keys (e.g. 'feedback.praise' + n) are built at runtime.
       for (const m of src.matchAll(/Mates\.t\('([^']+)'\)/g)) used.add(m[1]);
@@ -556,17 +558,17 @@ console.log('step 8 (i18n parity)');
   }
   // Dynamic keys: badge/mode nameKey + descKey, and builder partRow labelKey.
   for (const f of ['js/badges.js', 'js/modes/level.js', 'js/modes/adaptive.js', 'js/modes/timed.js']) {
-    const src = readFileSync(path.join(ROOT, f), 'utf8');
+    const src = readFileSync(path.join(WEB, f), 'utf8');
     for (const m of src.matchAll(/(?:nameKey|descKey):\s*'([^']+)'/g)) used.add(m[1]);
   }
-  for (const m of readFileSync(path.join(ROOT, 'js/app.js'), 'utf8').matchAll(/partRow\('[^']+',\s*'([^']+)'/g)) {
+  for (const m of readFileSync(path.join(WEB, 'js/app.js'), 'utf8').matchAll(/partRow\('[^']+',\s*'([^']+)'/g)) {
     used.add(m[1]);
   }
 
   const catalog = f => {
     const sandbox = { window: {} };
     vm.createContext(sandbox);
-    vm.runInContext(readFileSync(path.join(ROOT, f), 'utf8'), sandbox);
+    vm.runInContext(readFileSync(path.join(WEB, f), 'utf8'), sandbox);
     const i18n = sandbox.window.I18N;
     return new Set(Object.keys(i18n.en || i18n.es || {}));
   };

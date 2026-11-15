@@ -1,0 +1,17 @@
+{
+  "name": "mates",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mates — cozy bilingual maths practice PWA for primary school kids. Web app is dependency-free; these packages are Android build tooling only.",
+  "scripts": {
+    "cap:sync": "cap sync android",
+    "cap:open": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/core": "^8.6.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.2"
+  }
+}

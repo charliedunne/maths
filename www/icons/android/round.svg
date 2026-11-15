@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Legacy (pre-API-26) round launcher icon: terracotta circle with the
+       full mark (M + dot fits well inside). Render at 48dp x density:
+       mdpi=48 hdpi=72 xhdpi=96 xxhdpi=144 xxxhdpi=192. -->
+  <circle cx="256" cy="256" r="256" fill="#ef7d54"/>
+  <path d="M 138 366 L 138 196 L 256 300 L 374 196 L 374 366"
+        fill="none" stroke="#fffdf9" stroke-width="58"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="398" cy="140" r="30" fill="#3aa6a0"/>
+</svg>

@@ -1,0 +1,266 @@
+/* ============================================================
+   Mates — styles
+   Cozy design language: warm colors, rounded corners, soft
+   shadows, big touch targets. All colors are tokens so the
+   light/dark themes only swap values.
+   ============================================================ */
+
+/* ---------- Design tokens: light (default) ---------- */
+:root {
+  --bg: #fdf3e7;            /* warm cream */
+  --surface: #fffdf9;       /* card background */
+  --surface-2: #f6e8d6;     /* inset / segmented control track */
+  --text: #4a3b2f;          /* warm dark brown */
+  --text-muted: #97846f;
+  --primary: #ef7d54;       /* terracotta coral */
+  --primary-soft: #fbe0d4;
+  --primary-text: #ffffff;
+  --accent: #3aa6a0;        /* teal */
+  --accent-soft: #d8efed;
+  --success: #69a84f;
+  --success-soft: #e2efd8;
+  --warning: #e2b13c;
+  --danger-soft: #d98880;   /* muted rose, never harsh red */
+  --border: #eadbc8;
+  --shadow: 0 4px 16px rgba(120, 90, 50, 0.12);
+  --shadow-soft: 0 2px 8px rgba(120, 90, 50, 0.08);
+
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+  --tap: 52px;              /* minimum touch target */
+}
+
+/* ---------- Design tokens: dark (cozy deep plum) ---------- */
+[data-theme="dark"] {
+  --bg: #262230;
+  --surface: #322d40;
+  --surface-2: #3b3550;
+  --text: #f2ece1;
+  --text-muted: #a79db8;
+  --primary: #ef7d54;
+  --primary-soft: #4a3040;
+  --primary-text: #ffffff;
+  --accent: #4fc3bc;
+  --accent-soft: #2c4a48;
+  --success: #8bc34a;
+  --success-soft: #37452c;
+  --warning: #e2b13c;
+  --danger-soft: #d98880;
+  --border: #453e5c;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* ---------- Base ---------- */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1.45;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+#app {
+  max-width: 640px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+  animation: screen-in 0.25s ease;
+}
+
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- Typography ---------- */
+.title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.subtitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ---------- Header (left slot / centered title / right slot) ---------- */
+.header {
+  display: grid;
+  grid-template-columns: var(--tap) 1fr var(--tap);
+  align-items: center;
+  gap: 8px;
+}
+
+.header .title { text-align: center; }
+
+.icon-btn {
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.1s ease, background-color 0.2s ease;
+}
+
+.icon-btn:active { transform: scale(0.94); }
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  min-height: var(--tap);
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.15s ease;
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-text);
+  box-shadow: var(--shadow-soft);
+}
+
+.btn-primary:hover { filter: brightness(1.05); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--border);
+}
+
+.btn-block { display: block; width: 100%; }
+
+/* ---------- Segmented control ---------- */
+.seg {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+.seg button {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.seg button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-soft);
+}
+
+/* ---------- Toggle switch ---------- */
+.toggle {
+  position: relative;
+  width: 64px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--border);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  padding: 0;
+}
+
+.toggle .knob {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.2s ease;
+}
+
+.toggle[aria-pressed="true"] { background: var(--success); }
+.toggle[aria-pressed="true"] .knob { transform: translateX(28px); }
+
+/* ---------- Settings layout ---------- */
+.settings-group { display: flex; flex-direction: column; gap: 12px; }
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.setting-label { font-weight: 700; }
+
+/* ---------- Empty state ---------- */
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.empty-state p { margin: 0; }
+
+/* ---------- Utilities ---------- */
+.spacer { flex: 1; }
+.hidden { display: none !important; }
+.text-muted { color: var(--text-muted); }

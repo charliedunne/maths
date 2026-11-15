@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Mates — cozy maths practice for primary school kids.">
+  <title>Mates</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- PWA: manifest.json + sw.js registration are added in Step 7 -->
+</head>
+<body>
+  <div id="app"></div>
+  <noscript><p style="padding:2rem;text-align:center">Mates needs JavaScript to run.</p></noscript>
+
+  <!-- Load order matters: i18n catalogs -> i18n helper -> storage/settings -> app -->
+  <script src="js/i18n/en.js"></script>
+  <script src="js/i18n/es.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

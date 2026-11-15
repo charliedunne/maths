@@ -78,6 +78,77 @@ Mates.applyTheme = function () {
   document.documentElement.setAttribute('data-theme', mode);
 };
 
+/* ---------- Profiles ---------- */
+const PROFILES_KEY = 'mates.profiles';
+
+Mates.profiles = {
+  /** All profiles on this device, oldest first. */
+  list: function () {
+    return Mates.storage.get(PROFILES_KEY, []);
+  },
+
+  get: function (id) {
+    return this.list().find(function (p) { return p.id === id; }) || null;
+  },
+
+  /** Create a profile with a name and avatar config; returns it. */
+  create: function (name, avatarConfig) {
+    const profiles = this.list();
+    const profile = {
+      id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name: String(name || '').trim(),
+      avatar: Object.assign({}, Mates.avatar.DEFAULT, avatarConfig || {}),
+      createdAt: new Date().toISOString()
+    };
+    profiles.push(profile);
+    Mates.storage.set(PROFILES_KEY, profiles);
+    Mates.profileData.save(profile.id, {}); // initialize data record
+    return profile;
+  },
+
+  /** Remove a profile and its progress data. */
+  remove: function (id) {
+    Mates.storage.set(PROFILES_KEY, this.list().filter(function (p) { return p.id !== id; }));
+    Mates.storage.remove('mates.profile.' + id);
+  }
+};
+
+/* ---------- Per-profile progress data ---------- */
+const OPS = ['add', 'sub', 'mul', 'div'];
+
+function profileDataDefaults() {
+  const stats = {};
+  OPS.forEach(function (op) { stats[op] = { answered: 0, correct: 0 }; });
+  return {
+    points: 0,
+    currentStreak: 0,
+    bestStreak: 0,
+    lastPracticeDate: null, // 'YYYY-MM-DD' of the last practiced day
+    badges: [],
+    stats: stats,
+    highScores: {},         // keyed like 'timed.mul.3' or 'timed.mixed'
+    adaptiveLevel: { add: 2, sub: 2, mul: 2, div: 2 }
+  };
+}
+
+Mates.profileData = {
+  /** Load a profile's data with defaults merged in (safe for new profiles). */
+  get: function (id) {
+    const d = profileDataDefaults();
+    const saved = Mates.storage.get('mates.profile.' + id, {});
+    Object.assign(d, saved);
+    OPS.forEach(function (op) {
+      d.stats[op] = Object.assign({ answered: 0, correct: 0 }, (saved.stats || {})[op]);
+    });
+    d.adaptiveLevel = Object.assign({ add: 2, sub: 2, mul: 2, div: 2 }, saved.adaptiveLevel);
+    return d;
+  },
+
+  save: function (id, data) {
+    Mates.storage.set('mates.profile.' + id, data);
+  }
+};
+
 /* Follow system theme changes while in "system" mode. */
 if (window.matchMedia) {
   const mq = window.matchMedia('(prefers-color-scheme: dark)');

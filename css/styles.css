@@ -260,6 +260,127 @@ body {
 
 .empty-state p { margin: 0; }
 
+/* ---------- Profile grid ---------- */
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.profile-cell { position: relative; }
+
+.profile-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 24px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.profile-card:active { transform: scale(0.96); }
+
+.profile-name {
+  font-weight: 800;
+  font-size: 1.05rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-delete {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+}
+
+.profile-add {
+  border: 3px dashed var(--border);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+}
+
+.profile-add .plus { font-size: 2rem; font-weight: 800; line-height: 1; }
+
+/* ---------- Avatar builder ---------- */
+.builder-preview {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.option-row { display: flex; flex-direction: column; gap: 8px; }
+
+.option-options {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.opt-btn {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.opt-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  outline: 3px solid transparent;
+  outline-offset: 2px;
+}
+
+.swatch.active { outline-color: var(--primary); }
+
+.name-input {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.name-input::placeholder { color: var(--text-muted); font-weight: 400; }
+
 /* ---------- Utilities ---------- */
 .spacer { flex: 1; }
 .hidden { display: none !important; }

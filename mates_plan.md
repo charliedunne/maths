@@ -7,8 +7,8 @@
 4. When all boxes of a step are done: mark them `[x]`, update **Current status**, and `git commit` (user=charliedunne, email=charlie.dunne@gmail.com).
 
 ## Current status
-- Step in progress: **Step 2 — Profiles + avatar builder**
-- Last updated: 2026-11-15 — Step 1 complete (scaffold, i18n EN/ES, themes; smoke tests pass)
+- Step in progress: **Step 3 — Question generators + Level mode**
+- Last updated: 2026-11-15 — Steps 1–2 complete (scaffold, i18n, themes, profiles, avatar builder; 30 smoke assertions pass)
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -117,14 +117,14 @@ boot → profile select → (avatar builder / create profile) → home menu [Lev
 - [x] Test: `test/smoke.mjs` — 15 assertions covering boot, EN↔ES switch, theme switch, persistence across simulated reloads (all pass)
 - [x] `git commit`
 
-### Step 2 — Profiles + avatar builder
-- [ ] `js/avatar.js`: SVG part library for all parts/variants; `renderAvatar(config, size)` returns SVG string; cozy styling (rounded, rosy cheeks)
-- [ ] `storage.js`: createProfile / listProfiles / deleteProfile
-- [ ] Profile-select screen: grid of avatar + name cards, tap to enter app, "add profile" button
-- [ ] Avatar builder UI: large live preview, one option row per part, "Surprise me" randomize, name input, save
-- [ ] i18n strings for all profile/avatar UI (EN + ES complete)
-- [ ] Manual test: create 2 profiles with different avatars, switch between them, delete one
-- [ ] `git commit`
+### Step 2 — Profiles + avatar builder ✅
+- [x] `js/avatar.js`: SVG part library for all parts/variants; `renderAvatar(config, size)` returns SVG string; cozy styling (rounded, rosy cheeks)
+- [x] `storage.js`: createProfile / listProfiles / deleteProfile (+ per-profile data records with defaults)
+- [x] Profile-select screen: grid of avatar + name cards, tap to enter app, "add profile" card (always present, even when empty), delete × with confirm
+- [x] Avatar builder UI: large live preview, option rows as live mini-avatar thumbnails (hair color = swatches), "Surprise me" randomize, name input (live-bound, no re-render while typing), save → straight into home
+- [x] i18n strings for all profile/avatar UI (EN + ES complete)
+- [x] Test: smoke harness extended — avatar render/bounds, full builder flow ×2 profiles, switch, delete incl. data-record removal (all pass)
+- [x] `git commit`
 
 ### Step 3 — Question generators + Level mode
 - [ ] `js/questions.js`: generators for all 4 operations × levels 1–5 per the level table; non-negative answers, exact division only, no immediate duplicates in a round

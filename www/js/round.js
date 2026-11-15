@@ -77,7 +77,16 @@ Mates.round = (function () {
     if (!r || !r.timed) return;
     r.timeLeft--;
     if (r.timeLeft <= 0) finish();
-    else render();
+    else updateClock();
+  }
+
+  /** Update clock + score in place. Re-rendering the whole screen on every
+   *  tick replaces all DOM nodes and makes the round visibly flicker. */
+  function updateClock() {
+    const clock = document.getElementById('roundTimer');
+    if (clock) clock.textContent = '⏱ ' + r.timeLeft;
+    const score = document.getElementById('roundScore');
+    if (score) score.textContent = String(r.score);
   }
 
   /** Keypad input: digit string, 'back' or 'enter'. */
@@ -220,8 +229,8 @@ Mates.round = (function () {
     return '' +
       '<header class="header">' +
         '<button class="icon-btn" data-action="roundQuit" aria-label="' + Mates.t('common.cancel') + '">✕</button>' +
-        '<h1 class="title round-center">' + center + '</h1>' +
-        (s.timed ? '<span class="score-chip">' + s.score + '</span>' : '<span></span>') +
+        '<h1 class="title round-center" id="roundTimer">' + center + '</h1>' +
+        (s.timed ? '<span class="score-chip" id="roundScore">' + s.score + '</span>' : '<span></span>') +
       '</header>' +
 
       '<div class="card round-card">' +

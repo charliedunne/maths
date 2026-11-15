@@ -345,7 +345,13 @@ check('instant confirm: score 3 without waiting', t.score === 3 && t.timeLeft ==
 answer(false);
 check('wrong answer keeps score at 3', page.ctx.Mates.round.peek().score === 3);
 
+/* Ticks must update the clock in place, not re-render the screen (flicker fix). */
+let refreshes = 0;
+const origRefresh = page.ctx.Mates.router.refresh;
+page.ctx.Mates.router.refresh = function () { refreshes++; return origRefresh.apply(this, arguments); };
 for (let i = 0; i < 59; i++) page.ctx.Mates.round.tick();
+check('timer ticks do not re-render the round screen', refreshes === 0);
+page.ctx.Mates.router.refresh = origRefresh;
 check('one second left before end', page.ctx.Mates.round.peek().timeLeft === 1);
 page.ctx.Mates.round.tick();
 check('timer end renders results with bare score', page.appEl.innerHTML.includes('results-score">3<'));

@@ -477,6 +477,7 @@ body {
 }
 
 .round-card {
+  position: relative; /* anchor for the timed-mode answer flash */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -520,6 +521,29 @@ body {
 
 .fb-ok { color: var(--success); }
 .fb-no { color: var(--danger-soft); }
+
+/* Timed-mode answer flash: a quick ✓/✗ pop over the card. Short enough to
+   keep the pace of the challenge, visible enough to register right/wrong. */
+.round-flash {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 4rem;
+  font-weight: 800;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.round-flash.flash-ok { color: var(--success); animation: flashPop 500ms ease-out; }
+.round-flash.flash-no { color: var(--danger-soft); animation: flashPop 500ms ease-out; }
+
+@keyframes flashPop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  25%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  70%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
 
 /* ---------- Keypad ---------- */
 .keypad {

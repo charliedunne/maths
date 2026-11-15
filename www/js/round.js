@@ -96,6 +96,18 @@ Mates.round = (function () {
     if (el) el.innerHTML = r.input || '&nbsp;';
   }
 
+  /** Brief ✓/✗ pop over the round card (timed mode only). The class is
+   *  reset and re-added with a forced reflow so rapid consecutive answers
+   *  re-trigger the animation. */
+  function flash(ok) {
+    const el = document.getElementById('roundFlash');
+    if (!el) return;
+    el.textContent = ok ? '✓' : '✗';
+    el.className = 'round-flash';
+    void el.offsetWidth; // force reflow so the animation restarts
+    el.className = 'round-flash ' + (ok ? 'flash-ok' : 'flash-no');
+  }
+
   /** Update every dynamic part of the round screen in place after an
    *  answer or advance. */
   function patchRound() {
@@ -162,10 +174,10 @@ Mates.round = (function () {
     }
 
     if (r.timed) {
-      // quick flash, then straight to the next question
-      r.feedback = correct ? { type: 'ok', text: praiseText() }
-        : { type: 'no', text: Mates.t('feedback.wrong', { n: q.answer }) };
+      // Straight to the next question (no delay); a quick ✓/✗ pop over the
+      // card shows whether the answer was right without slowing the pace.
       advance();
+      flash(correct);
       return;
     }
 
@@ -271,6 +283,7 @@ Mates.round = (function () {
           s.question.b + ' = ?</div>' +
         '<div class="round-answer" id="roundAnswer">' + (s.input || '&nbsp;') + '</div>' +
         feedback +
+        '<div class="round-flash" id="roundFlash"></div>' +
       '</div>' +
 
       '<div class="keypad">' + keypad + '</div>';

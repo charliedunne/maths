@@ -345,6 +345,7 @@ let t = page.ctx.Mates.round.peek();
 check('timed round starts at 60 s', t.timed && t.timeLeft === 60);
 check('countdown shown in round header', page.appEl.innerHTML.includes('⏱ 60'));
 check('score chip present in timed round', page.appEl.innerHTML.includes('score-chip'));
+check('answer flash element present in round UI', page.appEl.innerHTML.includes('id="roundFlash"'));
 
 answer(true); answer(true); answer(true);
 t = page.ctx.Mates.round.peek();

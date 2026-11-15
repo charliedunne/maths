@@ -8,7 +8,7 @@
 
 ## Current status
 - Step in progress: **Step 9 — Capacitor → Android APK**
-- Last updated: 2026-11-15 — Steps 1–8 complete; Step 9 scaffold done (www/ layout, android platform added, Mates launcher icons rendered) — APK build pending a machine with Java 17 + Android SDK. Round-screen flicker fix extended to keypad/answer updates (in-place DOM patching, see Corrections). 130 smoke assertions pass
+- Last updated: 2026-11-15 — Steps 1–8 complete; Step 9 scaffold done (www/ layout, android platform added, Mates launcher icons rendered) — APK build pending a machine with Java 17 + Android SDK. Round-screen flicker fix extended to keypad/answer updates (in-place DOM patching, see Corrections); timed mode now shows a ✓/✗ flash per answer. 131 smoke assertions pass
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -45,7 +45,7 @@ Web app for primary-school maths practice (ages 5–11). **Arithmetic only**: ad
 Start at the profile's saved level for that operation (default 2). Step **up** after 3 consecutive correct, step **down** after 2 wrong. Clamp to 1–5. Round = 10 questions. Save the reached level back to the profile.
 
 ### Timed challenge
-60-second countdown. Pick operation + level, or "mixed" (all four operations). Instant confirm per answer, auto-advance. Score = correct count. High score saved per profile + mode key.
+60-second countdown. Pick operation + level, or "mixed" (all four operations). Instant confirm per answer, auto-advance — no delay, so a quick ✓/✗ pop (`#roundFlash`, 500 ms CSS animation on the round card) is the visual right/wrong indication alongside the sound. Score = correct count. High score saved per profile + mode key.
 
 ### Badges
 | id | Condition |

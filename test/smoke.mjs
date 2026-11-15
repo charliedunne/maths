@@ -22,6 +22,7 @@ const SCRIPTS = [
   'js/modes/level.js',
   'js/modes/adaptive.js',
   'js/modes/timed.js',
+  'js/modes/bomb.js',
   'js/app.js'
 ];
 
@@ -669,7 +670,7 @@ console.log('step 8 (i18n parity)');
     }
   }
   // Dynamic keys: badge/mode nameKey + descKey, and builder partRow labelKey.
-  for (const f of ['js/badges.js', 'js/modes/level.js', 'js/modes/adaptive.js', 'js/modes/timed.js']) {
+  for (const f of ['js/badges.js', 'js/modes/level.js', 'js/modes/adaptive.js', 'js/modes/timed.js', 'js/modes/bomb.js']) {
     const src = readFileSync(path.join(WEB, f), 'utf8');
     for (const m of src.matchAll(/(?:nameKey|descKey):\s*'([^']+)'/g)) used.add(m[1]);
   }
@@ -733,6 +734,151 @@ check('profileData.save survives quota error', (() => {
     page.ctx.localStorage.setItem = origSet;
   }
 })());
+
+/* ---------- Step 11: Bomb Race (load 3 page: ES, fresh device) ---------- */
+console.log('step 11 (bomb race)');
+
+/** Profile data of the long-name profile created in the edge-cases block. */
+const PB = () => {
+  const M = page.ctx.Mates;
+  const p = M.profiles.list().find(p => p.name === LONG_NAME);
+  return M.profileData.get(p.id);
+};
+const longId = page.ctx.Mates.profiles.list().find(p => p.name === LONG_NAME).id;
+
+/* Home shows the Bomb Race mode card. */
+page.appEl.click({ dataset: { action: 'backToProfiles' } });
+page.appEl.click({ dataset: { action: 'selectProfile', id: longId } });
+check('home shows bomb race card (ES)', page.appEl.innerHTML.includes('data-action="bombEnter"') && page.appEl.innerHTML.includes('Camino de la bomba'));
+
+/* Map: 20 nodes, quest 1 is the next mission, the rest locked, progress 0/20. */
+page.appEl.click({ dataset: { action: 'bombEnter' } });
+let map = page.appEl.innerHTML;
+check('map renders 20 nodes', (map.match(/bomb-node bomb-node--/g) || []).length === 20);
+check('progress chip 0 / 20', map.includes('>0 / 20<'));
+check('quest 1 is the next mission', map.includes('bomb-node--next" data-action="bombNode" data-quest="1"'));
+check('quest 3 locked and disabled', map.includes('bomb-node--locked" disabled data-action="bombNode" data-quest="3"'));
+
+/* Quest 1: ordered 1×1…1×10 with one countdown for the whole quest. */
+const ptsBeforeQ1 = PB().points;
+page.appEl.click({ dataset: { action: 'bombNode', quest: '1' } });
+let rt = page.ctx.Mates.round.peek();
+check('quest starts as a timed round of its ten questions', rt.timed && rt.count === 10 && rt.timeLeft === 60 && rt.bomb.quest === 1);
+page.ctx.Mates.round.tick(); // one second passes so elapsed is 1, not 0
+let orderedOk = true;
+for (let i = 1; i <= 10; i++) {
+  const q = page.ctx.Mates.round.peek().question; // peek BEFORE answering
+  if (q.a !== 1 || q.op !== '×' || q.b !== i) orderedOk = false;
+  answer(true);
+}
+check('quest 1 runs the ordered pairs 1×1…1×10', orderedOk);
+check('bomb success banner (ES)', page.appEl.innerHTML.includes('🎉 ¡Lo lograste!'));
+check('elapsed time shown (en 1 s)', page.appEl.innerHTML.includes('en 1 s'));
+check('score line 10 / 10', page.appEl.innerHTML.includes('>10 / 10<'));
+check('first-clear bonus +50 shown (ES)', page.appEl.innerHTML.includes('🎁 +50 puntos extra'));
+check('points line includes the bonus (+150)', page.appEl.innerHTML.includes('+150 puntos'));
+let dB = PB();
+check('points: score×10 + 50 first-clear bonus', dB.points === ptsBeforeQ1 + 150);
+check('quest 1 completed, frontier advanced to 1', dB.bombRace.completed.join(',') === '1' && dB.bombRace.frontier === 1);
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+map = page.appEl.innerHTML;
+check('continue returns to the map', map.includes('Camino de la bomba'));
+check('node 1 done, node 2 next, progress 1 / 20',
+  map.includes('bomb-node--done" data-action="bombNode" data-quest="1"') &&
+  map.includes('bomb-node--next" data-action="bombNode" data-quest="2"') &&
+  map.includes('>1 / 20<'));
+
+/* Quest 2: the same ten pairs of table 1 (quests 1-2 = table 1), shuffled. */
+page.appEl.click({ dataset: { action: 'bombNode', quest: '2' } });
+rt = page.ctx.Mates.round.peek();
+check('quest 2 is a shuffled repeat of table 1 with full time', rt.bomb.quest === 2 && rt.timeLeft === 60);
+const bSeen = new Set();
+let shuffleOk = true;
+for (let i = 0; i < 10; i++) {
+  const q = page.ctx.Mates.round.peek().question; // peek BEFORE answering
+  if (q.a !== 1 || q.op !== '×') shuffleOk = false;
+  bSeen.add(q.b);
+  answer(true);
+}
+check('quest 2 holds all ten pairs of table 1', shuffleOk && bSeen.size === 10);
+check('second first-clear also earns +50 (ES)', page.appEl.innerHTML.includes('🎁 +50 puntos extra'));
+dB = PB();
+check('completed [1,2], frontier 2', dB.bombRace.completed.join(',') === '1,2' && dB.bombRace.frontier === 2);
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
+/* Quest 3: timeout -> explosion; the next quest is still unlocked. */
+page.appEl.click({ dataset: { action: 'bombNode', quest: '3' } });
+for (let i = 0; i < 4; i++) answer(true);
+for (let i = 0; i < 60; i++) page.ctx.Mates.round.tick();
+check('bomb fail banner (ES)', page.appEl.innerHTML.includes('💥 ¡La bomba explotó! Conseguiste 4 de 10'));
+check('fail score line 4 / 10', page.appEl.innerHTML.includes('>4 / 10<'));
+check('no bonus on failure', !page.appEl.innerHTML.includes('🎁'));
+check('retry offered (ES)', page.appEl.innerHTML.includes('data-action="resultsRetry"') && page.appEl.innerHTML.includes('Intentar otra vez'));
+dB = PB();
+check('failure still unlocks the next quest (frontier 3)', dB.bombRace.frontier === 3);
+check('completed unchanged after failure', dB.bombRace.completed.join(',') === '1,2');
+
+/* Retry restarts the same quest with a fresh full countdown. */
+page.appEl.click({ dataset: { action: 'resultsRetry' } });
+rt = page.ctx.Mates.round.peek();
+check('retry: fresh round, same quest, full time', rt.bomb.quest === 3 && rt.timeLeft === 60 && rt.score === 0);
+for (let i = 0; i < 10; i++) answer(true);
+dB = PB();
+check('retried quest completed with its first-clear bonus', dB.bombRace.completed.join(',') === '1,2,3' && page.appEl.innerHTML.includes('🎁 +50 puntos extra'));
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+map = page.appEl.innerHTML;
+check('node 3 done, node 4 next, progress 3 / 20',
+  map.includes('bomb-node--done" data-action="bombNode" data-quest="3"') &&
+  map.includes('bomb-node--next" data-action="bombNode" data-quest="4"') &&
+  map.includes('>3 / 20<'));
+
+/* Replay a completed quest: points, but no second bonus. */
+const ptsBeforeReplay = PB().points;
+page.appEl.click({ dataset: { action: 'bombNode', quest: '1' } });
+for (let i = 0; i < 10; i++) answer(true);
+check('replay success has no bonus line', !page.appEl.innerHTML.includes('🎁'));
+check('replay earns score points only (+100)', page.appEl.innerHTML.includes('+100 puntos') && PB().points === ptsBeforeReplay + 100);
+dB = PB();
+check('no duplicate in the completed list', dB.bombRace.completed.filter(q => q === 1).length === 1);
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+check('continue from a replay returns to the map', page.appEl.innerHTML.includes('Camino de la bomba'));
+
+/* Per-profile bomb time: default 60 s, step ±5 s, clamped to 20–300 s. */
+page.appEl.click({ dataset: { action: 'bombBack' } }); // map -> home
+page.appEl.click({ dataset: { action: 'switchUser' } }); // home -> profiles
+page.appEl.click({ dataset: { action: 'openProfileSettings', id: longId } });
+let s = page.appEl.innerHTML;
+check('bomb time row defaults to 60 s', s.includes('>60<'));
+page.appEl.click({ dataset: { action: 'goalStep', field: 'bombTime', delta: '5' } });
+check('stepper +5 -> 65 s', page.appEl.innerHTML.includes('>65<'));
+page.appEl.click({ dataset: { action: 'goalStep', field: 'bombTime', delta: '-5' } });
+check('stepper -5 back to 60 s', page.appEl.innerHTML.includes('>60<'));
+{
+  const d = PB(); d.bombTime = 15;
+  page.ctx.Mates.profileData.save(longId, d);
+  page.ctx.Mates.router.refresh();
+}
+s = page.appEl.innerHTML;
+check('bomb time clamped to the 20 s minimum', s.includes('>20<') && s.includes('data-field="bombTime" data-delta="-5" disabled'));
+{
+  const d = PB(); d.bombTime = 400;
+  page.ctx.Mates.profileData.save(longId, d);
+  page.ctx.Mates.router.refresh();
+}
+s = page.appEl.innerHTML;
+check('bomb time clamped to the 300 s maximum', s.includes('>300<') && s.includes('data-field="bombTime" data-delta="5" disabled'));
+
+/* A new quest uses the configured bomb time. */
+{
+  const d = PB(); d.bombTime = 45;
+  page.ctx.Mates.profileData.save(longId, d);
+}
+page.appEl.click({ dataset: { action: 'profileSettingsBack' } }); // -> profiles
+page.appEl.click({ dataset: { action: 'selectProfile', id: longId } });
+page.appEl.click({ dataset: { action: 'bombEnter' } });
+page.appEl.click({ dataset: { action: 'bombNode', quest: '4' } });
+rt = page.ctx.Mates.round.peek();
+check('new quest uses the configured bomb time (45 s)', rt.bomb.quest === 4 && rt.timeLeft === 45);
 
 console.log(failures === 0 ? '\nAll smoke tests passed.' : `\n${failures} test(s) FAILED.`);
 process.exit(failures === 0 ? 0 : 1);

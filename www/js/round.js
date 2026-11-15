@@ -1,6 +1,8 @@
 /* Mates — shared practice-round engine.
- * Used by all modes: level (fixed), adaptive and timed.
- * cfg = { op, level, count, timed?, adaptive?, returnScreen, onComplete(results) }
+ * Used by all modes: level (fixed), adaptive, timed and Bomb Race.
+ * cfg = { op, level, count, timed?, adaptive?, bomb?, returnScreen, onComplete(results) }
+ * bomb = { quest, time }: a fixed list of ten questions with one countdown
+ * for the whole quest (see js/modes/bomb.js).
  * Adaptive rules (spec): step up after 3 consecutive correct,
  * step down after 2 wrong, clamped to levels 1–5. */
 window.Mates = window.Mates || {};
@@ -42,12 +44,14 @@ Mates.round = (function () {
 
   /** Start a round and show the round screen. */
   function start(cfg) {
+    const bomb = cfg.bomb || null; // { quest, time } — Bomb Race quest
     r = {
       op: cfg.op,
       level: Math.min(5, Math.max(1, cfg.level || 1)),
       count: cfg.count || 10,
-      timed: !!cfg.timed,
+      timed: !!cfg.timed || !!bomb,
       adaptive: !!cfg.adaptive,
+      bomb: bomb,
       returnScreen: cfg.returnScreen || 'home',
       onComplete: cfg.onComplete || null,
       index: 0,
@@ -60,12 +64,15 @@ Mates.round = (function () {
       goal: cfg.goal || null, // { target, time } for the goal-based challenge
       success: false,
       elapsed: 0,             // seconds used to reach the goal (on success)
-      timeLeft: cfg.timed ? (cfg.goal ? cfg.goal.time : 60) : 0,
+      timeLeft: bomb ? bomb.time : (cfg.timed ? (cfg.goal ? cfg.goal.time : 60) : 0),
       timerId: null,
       // Timed rounds run until the clock hits 0: no fixed count, questions
       // are generated on demand (also required for "mixed" operation).
-      count: cfg.timed ? Infinity : (cfg.count || 10),
-      questions: (cfg.adaptive || cfg.timed) ? null : Mates.questions.generateRound(cfg.op, cfg.level, cfg.count),
+      // Bomb Race runs a fixed list of ten questions with one countdown.
+      count: bomb ? 10 : (cfg.timed ? Infinity : (cfg.count || 10)),
+      questions: bomb ? Mates.bombQuest.questions(bomb.quest)
+        : ((cfg.adaptive || cfg.timed) ? null
+          : Mates.questions.generateRound(cfg.op, cfg.level, cfg.count)),
       currentQ: null,
       lastKey: null
     };
@@ -87,10 +94,13 @@ Mates.round = (function () {
    *  the existing nodes in place. A full innerHTML swap per tick or keypress
    *  replaces all DOM nodes and makes the screen visibly flicker. */
 
+  /** Clock icon: a bomb for Bomb Race quests, a stopwatch otherwise. */
+  function clockIcon() { return r.bomb ? '💣' : '⏱'; }
+
   /** Update the countdown text in place. */
   function patchTimer() {
     const el = document.getElementById('roundTimer');
-    if (el) el.textContent = '⏱ ' + r.timeLeft;
+    if (el) el.textContent = clockIcon() + ' ' + r.timeLeft;
   }
 
   /** Update only the answer display in place (digit / backspace presses). */
@@ -115,7 +125,7 @@ Mates.round = (function () {
    *  answer or advance. */
   function patchRound() {
     const timer = document.getElementById('roundTimer');
-    if (timer) timer.textContent = r.timed ? '⏱ ' + r.timeLeft : (r.index + 1) + ' / ' + r.count;
+    if (timer) timer.textContent = r.timed ? clockIcon() + ' ' + r.timeLeft : (r.index + 1) + ' / ' + r.count;
     const score = document.getElementById('roundScore');
     // Goal-based challenges show progress toward the target, e.g. "3 / 8".
     if (score) score.textContent = r.goal ? r.score + ' / ' + r.goal.target : String(r.score);
@@ -207,6 +217,8 @@ Mates.round = (function () {
     r.currentQ = null; // adaptive: next question is generated on demand
     r.index++;
     if (r.index >= r.count || (r.timed && r.timeLeft <= 0)) {
+      // Bomb Race: success means all ten questions were answered in time.
+      if (r.bomb) r.success = r.index >= r.count;
       finish();
       return;
     }
@@ -217,12 +229,14 @@ Mates.round = (function () {
     if (!r) return;
     const onComplete = r.onComplete;
     const results = {
-      op: r.op, count: r.index, score: r.score,
+      op: r.op, count: r.index, total: r.count, score: r.score,
       level: r.level, timed: r.timed, adaptive: r.adaptive,
+      bomb: r.bomb || null,
       goal: r.goal || null,
       success: !!r.success,
       // Seconds used: the finish time on success, the full limit otherwise.
-      elapsed: r.goal ? (r.success ? r.elapsed : r.goal.time) : null
+      elapsed: r.bomb ? (r.success ? r.bomb.time - r.timeLeft : r.bomb.time)
+        : (r.goal ? (r.success ? r.elapsed : r.goal.time) : null)
     };
     if (r.timerId) clearInterval(r.timerId);
     r = null;
@@ -252,6 +266,7 @@ Mates.round = (function () {
       op: r.op, level: r.level, index: r.index, count: r.count,
       score: r.score, input: r.input, locked: r.locked,
       timed: r.timed, adaptive: r.adaptive, timeLeft: r.timeLeft,
+      bomb: r.bomb || null,
       goal: r.goal,
       feedback: r.feedback, question: currentQuestion()
     };
@@ -265,7 +280,7 @@ Mates.round = (function () {
     if (!s) { Mates.router.go('home'); return ''; }
 
     const center = s.timed
-      ? '⏱ ' + s.timeLeft
+      ? (s.bomb ? '💣' : '⏱ ') + s.timeLeft
       : (s.index + 1) + ' / ' + s.count;
 
     /* Subtle current-level indicator, adaptive rounds only. */
@@ -316,7 +331,18 @@ Mates.round = (function () {
     if (res.adaptive) {
       extra += '<p class="results-extra">' + Mates.t('results.levelReached', { n: res.level }) + '</p>';
     }
-    if (res.timed && res.goal) {
+    if (res.bomb) {
+      // Bomb Race quest: celebrate the escape or mourn the explosion.
+      if (res.success) {
+        banner = '<div class="results-banner results-banner-win">' +
+          '<div class="results-banner-title">🎉 ' + Mates.t('results.success') + '</div>' +
+          '<p class="results-extra">' + Mates.t('results.successTime', { n: res.elapsed }) + '</p></div>';
+      } else {
+        banner = '<div class="results-banner results-banner-lose">' +
+          '<div class="results-banner-title">' +
+          Mates.t('bomb.fail', { got: res.score }) + '</div></div>';
+      }
+    } else if (res.timed && res.goal) {
       // Goal-based challenge: celebrate a success or encourage a retry.
       if (res.success) {
         banner = '<div class="results-banner results-banner-win">' +
@@ -350,12 +376,13 @@ Mates.round = (function () {
         }).join('') + '</div>';
     }
 
-    const scoreLine = res.timed
+    /* Bomb quests show "got X of the ten"; other modes count answered. */
+    const scoreLine = res.timed && !res.bomb
       ? (res.goal ? res.score + ' / ' + res.goal.target : String(res.score))
-      : res.score + ' / ' + res.count;
+      : res.score + ' / ' + (res.bomb ? res.total : res.count);
     const points = res.score * 10 + (res.bonus || 0);
-    // "Try again" restarts the same challenge; only offered after a failure.
-    const retryBtn = (res.timed && res.goal && !res.success && res.retry)
+    // "Try again" restarts the same challenge or quest; only offered after a failure.
+    const retryBtn = (((res.timed && res.goal) || res.bomb) && !res.success && res.retry)
       ? '<button class="btn btn-primary" data-action="resultsRetry">' +
           Mates.t('results.retry') + '</button>' +
         '<button class="btn btn-ghost" data-action="resultsContinue">' +
@@ -387,8 +414,11 @@ Mates.round = (function () {
   };
 
   Mates.actions.resultsContinue = function () {
+    // Modes can send the player back somewhere other than home (e.g. the
+    // Bomb Race map) by setting returnScreen on the results record.
+    const dest = Mates.state.lastResults ? Mates.state.lastResults.returnScreen : null;
     Mates.state.lastResults = null;
-    Mates.router.go('home');
+    Mates.router.go(dest || 'home');
   };
 
   /** "Try again": restart the same goal-based challenge after a failure. */

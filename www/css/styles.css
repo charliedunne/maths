@@ -675,6 +675,111 @@ body {
   font-size: 1.05rem;
 }
 
+/* ---------- Bomb Race map ---------- */
+.bomb-hint {
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin: 4px 0 12px;
+}
+
+.bomb-map {
+  display: flex;
+  flex-direction: column;
+}
+
+/* One boustrophedon row: four nodes with dashed links between them. */
+.bomb-row {
+  display: flex;
+  align-items: center;
+}
+
+.bomb-link {
+  flex: 1;
+  border-top: 3px dashed var(--border);
+  margin: 0 4px;
+}
+
+/* Vertical dashed link where the path turns to the next row. */
+.bomb-turn {
+  position: relative;
+  height: 26px;
+}
+
+.bomb-vlink {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 3px dashed var(--border);
+}
+
+/* Node centres sit half a node (28px) from the row edge. */
+.bomb-turn--right .bomb-vlink { right: 28px; }
+.bomb-turn--left .bomb-vlink { left: 28px; }
+
+.bomb-node {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex: none;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.1s ease, background-color 0.2s ease;
+}
+
+.bomb-node:active { transform: scale(0.94); }
+
+.bomb-node-label { font-weight: 800; font-size: 1.05rem; line-height: 1.1; }
+.bomb-node-sub { font-size: 0.7rem; line-height: 1; }
+
+/* Corner status badge (✓ / 💥 / 🔒). */
+.bomb-node-icon {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 0.95rem;
+}
+
+/* State: completed quest. */
+.bomb-node--done {
+  background: var(--success-soft);
+  border-color: var(--success);
+}
+
+/* State: the next mission — pulses to draw attention. */
+.bomb-node--next {
+  border-color: var(--accent);
+  animation: bombPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes bombPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* State: attempted but the bomb exploded. */
+.bomb-node--failed { border-color: var(--danger-soft); }
+
+/* State: not unlocked yet. */
+.bomb-node--locked { opacity: 0.45; cursor: default; }
+
+.bomb-alldone {
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--success);
+  margin-top: 16px;
+}
+
 /* ---------- Utilities ---------- */
 .spacer { flex: 1; }
 .hidden { display: none !important; }

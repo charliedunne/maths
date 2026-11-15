@@ -111,9 +111,9 @@ Mates.screens = Object.assign(Mates.screens || {}, {
     const d = Mates.profileData.get(p.id);
 
     /** One +/− stepper row; buttons disable themselves at the limits. */
-    function stepperRow(field, labelKey, value, step) {
-      const atMin = Mates.timedGoal.clamp(field, value - step) === value;
-      const atMax = Mates.timedGoal.clamp(field, value + step) === value;
+    function stepperRow(field, labelKey, value, step, clamp) {
+      const atMin = clamp(value - step) === value;
+      const atMax = clamp(value + step) === value;
       return '<div class="settings-row stepper-row">' +
         '<div class="setting-label">' + Mates.t(labelKey) + '</div>' +
         '<div class="stepper">' +
@@ -138,8 +138,12 @@ Mates.screens = Object.assign(Mates.screens || {}, {
         '<div class="setting-label">' + Mates.esc(p.name) + '</div>' +
       '</div>' +
       '<div class="card settings-group">' +
-        stepperRow('target', 'goal.target', d.timedGoal.target, 1) +
-        stepperRow('time', 'goal.time', d.timedGoal.time, 5) +
+        stepperRow('target', 'goal.target', d.timedGoal.target, 1,
+          function (v) { return Mates.timedGoal.clamp('target', v); }) +
+        stepperRow('time', 'goal.time', d.timedGoal.time, 5,
+          function (v) { return Mates.timedGoal.clamp('time', v); }) +
+        stepperRow('bombTime', 'bomb.time', Mates.bombTime.get(p.id), 5,
+          function (v) { return Mates.bombTime.clamp(v); })
       '</div>';
   },
 
@@ -378,13 +382,17 @@ Mates.actions.profileSettingsBack = function () {
   Mates.router.go('profiles');
 };
 
-/** Adjust the active profile's timed-challenge goal by a stepper delta. */
+/** Adjust a per-profile setting by a stepper delta (timed goal or bomb time). */
 Mates.actions.goalStep = function (el) {
   const id = Mates.state.profileId;
   if (!Mates.profiles.get(id)) return;
   const field = el.dataset.field;
   const d = Mates.profileData.get(id);
-  d.timedGoal[field] = Mates.timedGoal.clamp(field, d.timedGoal[field] + Number(el.dataset.delta));
+  if (field === 'bombTime') {
+    d.bombTime = Mates.bombTime.clamp(d.bombTime + Number(el.dataset.delta));
+  } else {
+    d.timedGoal[field] = Mates.timedGoal.clamp(field, d.timedGoal[field] + Number(el.dataset.delta));
+  }
   Mates.profileData.save(id, d);
   Mates.router.refresh();
 };

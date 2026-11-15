@@ -7,8 +7,8 @@
 4. When all boxes of a step are done: mark them `[x]`, update **Current status**, and `git commit` (user=charliedunne, email=charlie.dunne@gmail.com).
 
 ## Current status
-- Step in progress: **Step 8 — Polish + QA pass**
-- Last updated: 2026-11-15 — Steps 1–7 complete (scaffold, i18n, themes, profiles, avatar builder, question generators, level/adaptive/timed modes, gamification, PWA; 119 smoke assertions pass)
+- Step in progress: **Step 9 — Capacitor → Android APK**
+- Last updated: 2026-11-15 — Steps 1–8 complete (scaffold, i18n, themes, profiles, avatar builder, question generators, level/adaptive/timed modes, gamification, PWA, onboarding + WebAudio sound + QA edge cases; 127 smoke assertions pass)
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -177,13 +177,21 @@ boot → profile select → (avatar builder / create profile) → home menu [Lev
 - [x] `git commit`
 
 ### Step 8 — Polish + QA pass
-- [ ] First-launch onboarding (welcome → create profile)
-- [ ] WebAudio sound feedback (correct/wrong beeps), respects `settings.sound`, no audio assets
-- [ ] Full ES pass: every string translated, no EN leaks anywhere
-- [ ] Full dark-theme pass: contrast + avatar legibility on every screen
-- [ ] Edge cases: single-profile leaderboard, very long profile names, storage quota failure handled gracefully
-- [ ] Final review against the spec summary in section 1
-- [ ] `git commit`
+- [x] First-launch onboarding (welcome → create profile)
+- [x] WebAudio sound feedback (correct/wrong beeps), respects `settings.sound`, no audio assets
+- [x] Full ES pass: every string translated, no EN leaks anywhere
+- [x] Full dark-theme pass: contrast + avatar legibility on every screen
+- [x] Edge cases: single-profile leaderboard, very long profile names, storage quota failure handled gracefully
+- [x] Final review against the spec summary in section 1
+- [x] `git commit`
+
+Notes (Step 8):
+- Onboarding: fresh device (no profiles) boots to a `welcome` screen; `welcomeStart` → profile builder → home. Returning devices go straight to profiles.
+- Sound: `js/sound.js` exposes `Mates.sound.play('correct'|'wrong'|'badge')` via WebAudio oscillators — no audio files. Hooks in `round.js` (`submit()` after scoring, `finish()` when new badges). Guarded: respects `settings.sound`, no-op without AudioContext (safe in the smoke harness).
+- i18n: static parity check added to `test/smoke.mjs` — extracts every literal `Mates.t('...')` key plus dynamic nameKey/descKey/partRow keys from js/ and asserts presence in both EN and ES catalogs.
+- Dark-theme pass: only hardcoded colors are two theme-independent contrast pairs (`.badge-earned`, `.key-go`) and the welcome-screen brand SVG (matches PWA icon).
+- Edge cases tested: sound no-op without AudioContext, 64-char profile name on home + leaderboard, single-profile leaderboard shows 🥇 row, `profileData.save` fails soft when setItem throws quota error.
+- SW cache bumped to `mates-v2` (sound.js added to precache).
 
 ### Step 9 — Capacitor → Android APK (after web app is done)
 - [ ] `package.json` with `@capacitor/core`, `@capacitor/cli`, `@capacitor/android` (tooling only — app code stays dependency-free)

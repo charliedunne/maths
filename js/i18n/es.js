@@ -4,6 +4,9 @@ window.I18N = window.I18N || {};
 window.I18N.es = {
   'app.name': 'Mates',
 
+  'welcome.tagline': 'Práctica de mates acogedora para mentes en crecimiento.',
+  'welcome.start': '¡Vamos!',
+
   'common.back': 'Atrás',
   'common.save': 'Guardar',
   'common.cancel': 'Cancelar',

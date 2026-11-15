@@ -2,7 +2,7 @@
  * Loads the app scripts in a vm context with a minimal fake DOM
  * and a shared localStorage stub, then simulates user clicks.
  * Run: node test/smoke.mjs */
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 
@@ -14,6 +14,7 @@ const SCRIPTS = [
   'js/avatar.js',
   'js/storage.js',
   'js/badges.js',
+  'js/sound.js',
   'js/questions.js',
   'js/round.js',
   'js/modes/level.js',
@@ -103,7 +104,31 @@ console.log('load 1 (first run, en-US, light system)');
 let page = loadPage({ browserLang: 'en-US', systemDark: false });
 check('theme defaults to light via system', page.documentElement.attrs['data-theme'] === 'light');
 check('language auto-detected as en', page.documentElement.lang === 'en');
-check('profiles screen rendered', page.appEl.innerHTML.includes("Who's playing?"));
+
+/* ---------- Step 8: onboarding — fresh device boots to welcome ---------- */
+console.log('step 8 (onboarding)');
+check('welcome screen on fresh device',
+  page.appEl.innerHTML.includes('Cozy maths practice for growing brains.'));
+check('welcome start button present', page.appEl.innerHTML.includes('data-action="welcomeStart"'));
+
+/* Welcome -> builder -> first profile */
+page.appEl.click({ dataset: { action: 'welcomeStart' } });
+check('builder screen rendered (EN)', page.appEl.innerHTML.includes('New profile</h1>'));
+page.appEl.click({ dataset: { action: 'builderSurprise' } });
+page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hair', value: '3' } });
+page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hairColor', value: '6' } });
+page.appEl.input('Luna');
+page.appEl.click({ dataset: { action: 'builderSave' } });
+check('home screen greets Luna (EN)', page.appEl.innerHTML.includes('Hi, Luna!'));
+
+let profiles = page.ctx.Mates.profiles.list();
+check('one profile created', profiles.length === 1 && profiles[0].name === 'Luna');
+check('avatar config persisted', profiles[0].avatar.hair === 3 && profiles[0].avatar.hairColor === 6);
+check('profile data initialized', page.ctx.Mates.profileData.get(profiles[0].id).points === 0);
+
+/* Settings dance from the profiles screen */
+page.appEl.click({ dataset: { action: 'switchUser' } });
+check('profiles grid shows Luna card', page.appEl.innerHTML.includes('>Luna<'));
 check('settings gear present', page.appEl.innerHTML.includes('data-action="openSettings"'));
 
 /* Open settings */
@@ -144,30 +169,14 @@ check('random config in bounds', (() => {
   return r.face < 3 && r.skin < 6 && r.hair < 6 && r.hairColor < 7 && r.eyes < 3 && r.mouth < 3;
 })());
 
-/* Profiles screen: empty state + add card */
+/* Profiles screen: Luna card (created during onboarding) + add card */
 page.appEl.click({ dataset: { action: 'backToProfiles' } });
-check('empty state shown', page.appEl.innerHTML.includes('Todavía no hay perfiles'));
+check('profiles grid shows Luna card', page.appEl.innerHTML.includes('>Luna<'));
 check('add-profile card present', page.appEl.innerHTML.includes('data-action="addProfile"'));
 
-/* Builder flow: surprise -> pick parts -> name -> save */
+/* Second profile via the builder, then delete the first */
 page.appEl.click({ dataset: { action: 'addProfile' } });
-check('builder screen rendered', page.appEl.innerHTML.includes('Nuevo perfil</h1>'));
-page.appEl.click({ dataset: { action: 'builderSurprise' } });
-page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hair', value: '3' } });
-page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hairColor', value: '6' } });
-page.appEl.input('Luna');
-page.appEl.click({ dataset: { action: 'builderSave' } });
-check('home screen greets Luna (ES)', page.appEl.innerHTML.includes('¡Hola, Luna!'));
-
-let profiles = page.ctx.Mates.profiles.list();
-check('one profile created', profiles.length === 1 && profiles[0].name === 'Luna');
-check('avatar config persisted', profiles[0].avatar.hair === 3 && profiles[0].avatar.hairColor === 6);
-check('profile data initialized', page.ctx.Mates.profileData.get(profiles[0].id).points === 0);
-
-/* Second profile, then delete the first */
-page.appEl.click({ dataset: { action: 'switchUser' } });
-check('profiles grid shows Luna card', page.appEl.innerHTML.includes('>Luna<'));
-page.appEl.click({ dataset: { action: 'addProfile' } });
+check('builder screen rendered (ES)', page.appEl.innerHTML.includes('Nuevo perfil</h1>'));
 page.appEl.input('Max');
 page.appEl.click({ dataset: { action: 'builderSave' } });
 check('home greets Max', page.appEl.innerHTML.includes('¡Hola, Max!'));
@@ -508,7 +517,8 @@ store.clear();
 page = loadPage({ browserLang: 'es-ES', systemDark: true });
 check('language auto-detected as es', page.documentElement.lang === 'es');
 check('theme follows dark system pref', page.documentElement.attrs['data-theme'] === 'dark');
-check('profiles screen in ES', page.appEl.innerHTML.includes('¿Quién juega?'));
+check('welcome screen in ES on fresh device',
+  page.appEl.innerHTML.includes('Práctica de mates acogedora para mentes en crecimiento.'));
 
 /* ---------- Step 7: PWA files (static checks, no browser needed) ---------- */
 console.log('step 7 (pwa)');
@@ -529,6 +539,86 @@ console.log('step 7 (pwa)');
   const html = readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   check('index.html links manifest + theme-color', html.includes('rel="manifest"') && html.includes('name="theme-color"'));
 }
+
+/* ---------- Step 8: i18n completeness (every key used in code exists in both catalogs) ---------- */
+console.log('step 8 (i18n parity)');
+{
+  const jsDirs = ['js', 'js/modes'];
+  const used = new Set();
+  for (const dir of jsDirs) {
+    for (const f of readdirSync(path.join(ROOT, dir))) {
+      if (!f.endsWith('.js')) continue;
+      const src = readFileSync(path.join(ROOT, dir, f), 'utf8');
+      // Only fully-literal calls: key immediately followed by ")".
+      // Concatenated keys (e.g. 'feedback.praise' + n) are built at runtime.
+      for (const m of src.matchAll(/Mates\.t\('([^']+)'\)/g)) used.add(m[1]);
+    }
+  }
+  // Dynamic keys: badge/mode nameKey + descKey, and builder partRow labelKey.
+  for (const f of ['js/badges.js', 'js/modes/level.js', 'js/modes/adaptive.js', 'js/modes/timed.js']) {
+    const src = readFileSync(path.join(ROOT, f), 'utf8');
+    for (const m of src.matchAll(/(?:nameKey|descKey):\s*'([^']+)'/g)) used.add(m[1]);
+  }
+  for (const m of readFileSync(path.join(ROOT, 'js/app.js'), 'utf8').matchAll(/partRow\('[^']+',\s*'([^']+)'/g)) {
+    used.add(m[1]);
+  }
+
+  const catalog = f => {
+    const sandbox = { window: {} };
+    vm.createContext(sandbox);
+    vm.runInContext(readFileSync(path.join(ROOT, f), 'utf8'), sandbox);
+    const i18n = sandbox.window.I18N;
+    return new Set(Object.keys(i18n.en || i18n.es || {}));
+  };
+  const en = catalog('js/i18n/en.js');
+  const es = catalog('js/i18n/es.js');
+
+  const missingEn = [...used].filter(k => !en.has(k));
+  const missingEs = [...used].filter(k => !es.has(k));
+  check('i18n: all used keys present in EN' + (missingEn.length ? ' (missing: ' + missingEn.join(', ') + ')' : ''), missingEn.length === 0);
+  check('i18n: all used keys present in ES' + (missingEs.length ? ' (missing: ' + missingEs.join(', ') + ')' : ''), missingEs.length === 0);
+}
+
+/* ---------- Step 8: edge cases (load 3 page: ES, fresh device) ---------- */
+console.log('step 8 (edge cases)');
+
+/* Sound: no AudioContext in this harness — play() must be a silent no-op.
+ * Fresh-device defaults have sound ON, so the AudioContext guard is exercised. */
+check('sound.play no-ops without AudioContext', (() => {
+  try {
+    page.ctx.Mates.sound.play('correct');
+    page.ctx.Mates.sound.play('wrong');
+    page.ctx.Mates.sound.play('badge');
+    return true;
+  } catch (e) { return false; }
+})());
+
+/* Single profile with a very long name: home greeting + leaderboard row. */
+const LONG_NAME = 'Abraham'.repeat(8); // 64 chars
+page.appEl.click({ dataset: { action: 'welcomeStart' } });
+page.appEl.input(LONG_NAME);
+page.appEl.click({ dataset: { action: 'builderSave' } });
+check('home renders very long name', page.appEl.innerHTML.includes(LONG_NAME));
+
+page.appEl.click({ dataset: { action: 'openLeaderboard' } });
+check('single-profile leaderboard has 🥇 row',
+  page.appEl.innerHTML.includes('🥇') && page.appEl.innerHTML.includes(LONG_NAME));
+
+/* Storage quota failure: setItem throws — saves must fail soft, not throw. */
+check('profileData.save survives quota error', (() => {
+  const M = page.ctx.Mates;
+  const id = M.profiles.list()[0].id;
+  const origSet = page.ctx.localStorage.setItem;
+  page.ctx.localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+  try {
+    M.profileData.save(id, { points: 5 });
+    return true; // no exception
+  } catch (e) {
+    return false;
+  } finally {
+    page.ctx.localStorage.setItem = origSet;
+  }
+})());
 
 console.log(failures === 0 ? '\nAll smoke tests passed.' : `\n${failures} test(s) FAILED.`);
 process.exit(failures === 0 ? 0 : 1);

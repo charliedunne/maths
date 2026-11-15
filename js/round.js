@@ -99,6 +99,7 @@ Mates.round = (function () {
     const q = currentQuestion();
     const correct = Number(r.input) === q.answer;
     if (correct) r.score++;
+    Mates.sound.play(correct ? 'correct' : 'wrong');
 
     // Adaptive difficulty adjustment
     if (r.adaptive) {
@@ -160,6 +161,7 @@ Mates.round = (function () {
     // Record before rendering so record functions can attach extra info
     // (e.g. high scores) that the results screen displays.
     if (onComplete) onComplete(results);
+    if (results.newBadges && results.newBadges.length) Mates.sound.play('badge');
     Mates.state.lastResults = results;
     Mates.router.go('results');
   }

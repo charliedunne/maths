@@ -4,6 +4,9 @@ window.I18N = window.I18N || {};
 window.I18N.en = {
   'app.name': 'Mates',
 
+  'welcome.tagline': 'Cozy maths practice for growing brains.',
+  'welcome.start': "Let's go!",
+
   'common.back': 'Back',
   'common.save': 'Save',
   'common.cancel': 'Cancel',

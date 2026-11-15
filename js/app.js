@@ -48,6 +48,22 @@ Mates.router = {
 Mates.screens = Object.assign(Mates.screens || {}, {
 
   /** Profile selection grid. */
+  /** First-launch welcome, shown when the device has no profiles yet. */
+  welcome: function () {
+    return '' +
+      '<div class="card welcome-card">' +
+        '<svg viewBox="0 0 512 512" width="120" height="120" aria-hidden="true">' +
+          '<rect width="512" height="512" rx="112" fill="#ef7d54"/>' +
+          '<path d="M 138 366 L 138 196 L 256 300 L 374 196 L 374 366" fill="none" stroke="#fffdf9" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '<circle cx="398" cy="140" r="30" fill="#3aa6a0"/>' +
+        '</svg>' +
+        '<h1 class="welcome-title">' + Mates.t('app.name') + '</h1>' +
+        '<p class="welcome-tagline">' + Mates.t('welcome.tagline') + '</p>' +
+        '<button class="btn btn-primary" data-action="welcomeStart">' +
+          Mates.t('welcome.start') + '</button>' +
+      '</div>';
+  },
+
   profiles: function () {
     const profiles = Mates.profiles.list();
 
@@ -310,6 +326,12 @@ Mates.actions.deleteProfile = function (el) {
   Mates.router.refresh();
 };
 
+/** Welcome screen start: straight to the profile builder on a fresh device. */
+Mates.actions.welcomeStart = function () {
+  Mates.state.building = { name: '', config: Mates.avatar.random() };
+  Mates.router.go('builder');
+};
+
 Mates.actions.addProfile = function () {
   Mates.state.building = { name: '', config: Mates.avatar.random() };
   Mates.router.go('builder');
@@ -384,7 +406,8 @@ function boot() {
   Object.keys(Mates.modes).forEach(function (key) {
     Mates.actions[key + 'Enter'] = Mates.modes[key].enter;
   });
-  Mates.router.go('profiles');
+  // First launch (no profiles yet): welcome screen, then profile builder.
+  Mates.router.go(Mates.profiles.list().length === 0 ? 'welcome' : 'profiles');
 }
 
 if (document.readyState === 'loading') {

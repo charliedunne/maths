@@ -7,12 +7,13 @@
 4. When all boxes of a step are done: mark them `[x]`, update **Current status**, and `git commit` (user=charliedunne, email=charlie.dunne@gmail.com).
 
 ## Current status
-- Step in progress: **Step 3 — Question generators + Level mode**
-- Last updated: 2026-11-15 — Steps 1–2 complete (scaffold, i18n, themes, profiles, avatar builder; 30 smoke assertions pass)
+- Step in progress: **Step 4 — Adaptive mode**
+- Last updated: 2026-11-15 — Steps 1–3 complete (scaffold, i18n, themes, profiles, avatar builder, question generators, level mode; 60 smoke assertions pass)
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
-- **Testing**: no browser available in the dev environment — verification uses `test/smoke.mjs` (Node vm + fake DOM + shared localStorage stub), run with `node test/smoke.mjs`. Visual/real-device checks are left to the user.
+- **Shared round engine**: added `js/round.js` (not in the original layout) — one round engine + round/results screens shared by level, adaptive and timed modes. Modes register in `Mates.modes` (home renders them) and pass a cfg to `Mates.round.start()`. Load order: questions → round → modes → app; all files merge into `Mates.screens`/`Mates.actions` instead of overwriting.
+- **Testing**: no browser available in the dev environment — verification uses `test/smoke.mjs` (Node vm + fake DOM + shared localStorage stub, controllable setTimeout/setInterval), run with `node test/smoke.mjs`. Visual/real-device checks are left to the user.
 
 ---
 
@@ -126,16 +127,16 @@ boot → profile select → (avatar builder / create profile) → home menu [Lev
 - [x] Test: smoke harness extended — avatar render/bounds, full builder flow ×2 profiles, switch, delete incl. data-record removal (all pass)
 - [x] `git commit`
 
-### Step 3 — Question generators + Level mode
-- [ ] `js/questions.js`: generators for all 4 operations × levels 1–5 per the level table; non-negative answers, exact division only, no immediate duplicates in a round
-- [ ] Level-mode screen: operation picker (4 big buttons with symbols), level picker 1–5, start
-- [ ] Round UI: large question display, on-screen number keypad + backspace + confirm, physical keyboard support
-- [ ] Per-question feedback: correct = positive/celebratory; wrong = show correct answer briefly, encouraging tone (no harsh red); auto-advance
-- [ ] 10 questions per round → results screen: score x/10, points earned, continue button
-- [ ] Record to profile storage: stats per operation, points += 10 × correct
-- [ ] i18n strings for all mode UI (EN + ES complete)
-- [ ] Manual test: spot-check ranges for all 4 operations × 5 levels; verify no negatives/remainders
-- [ ] `git commit`
+### Step 3 — Question generators + Level mode ✅
+- [x] `js/questions.js`: generators for all 4 operations × levels 1–5 per the level table; non-negative answers, exact division only, unique questions per round
+- [x] Level-mode screen (`js/modes/level.js`): operation picker (4 big buttons with symbols), level picker 1–5, start
+- [x] Round UI (`js/round.js`, shared engine): large question display, on-screen number keypad + backspace + confirm, physical keyboard support (digits/Backspace/Enter)
+- [x] Per-question feedback: correct = random praise; wrong = "Almost! The answer was N" in muted rose; 1 s lock then auto-advance
+- [x] 10 questions per round → results screen: score x/10, points earned (+10 × correct), continue button
+- [x] Record to profile storage: stats per operation, points += 10 × correct
+- [x] i18n strings for all mode UI (EN + ES complete)
+- [x] Test: 20 op×level generator invariants (60 samples each), round uniqueness, full 10/10 round with stats+points verification, wrong-answer feedback path, mid-round quit (all pass)
+- [x] `git commit`
 
 ### Step 4 — Adaptive mode
 - [ ] Adaptive engine in `js/modes/adaptive.js`: start from saved level (default 2), up after 3 consecutive correct, down after 2 wrong, clamp 1–5

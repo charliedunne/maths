@@ -381,6 +381,109 @@ body {
 
 .name-input::placeholder { color: var(--text-muted); font-weight: 400; }
 
+/* ---------- Home mode menu ---------- */
+.mode-card {
+  width: 100%;
+  font-size: 1.25rem;
+  text-align: left;
+  padding: 16px 24px;
+}
+
+.home-hello { margin: 0; font-weight: 700; }
+
+/* ---------- Round screen ---------- */
+.round-center { font-variant-numeric: tabular-nums; }
+
+.score-chip {
+  justify-self: end;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+
+.round-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 20px;
+}
+
+.round-question {
+  font-size: 2.6rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.round-answer {
+  min-width: 120px;
+  min-height: 56px;
+  padding: 4px 20px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  font-size: 2rem;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.round-feedback {
+  min-height: 32px;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.fb-ok { color: var(--success); }
+.fb-no { color: var(--danger-soft); }
+
+/* ---------- Keypad ---------- */
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.key {
+  min-height: 72px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.08s ease;
+}
+
+.key:active { transform: scale(0.95); }
+
+.key-fn { background: var(--surface-2); font-size: 1.4rem; }
+.key-go { background: var(--success); color: #fff; }
+
+/* ---------- Results ---------- */
+.results-score {
+  font-size: 3rem;
+  font-weight: 800;
+}
+
+.results-points {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.results-extra {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
 /* ---------- Utilities ---------- */
 .spacer { flex: 1; }
 .hidden { display: none !important; }

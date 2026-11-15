@@ -7,8 +7,13 @@ window.Mates = window.Mates || {};
 Mates.state = {
   screen: 'profiles',
   profileId: null,        // active profile id (null until one is selected)
-  building: null          // in-progress profile: { name, config }
+  building: null,         // in-progress profile: { name, config }
+  levelSel: null,         // level-mode selection: { op, level }
+  lastResults: null       // finished round results (shown on results screen)
 };
+
+/** Practice modes, registered by js/modes/*.js; home renders them. */
+Mates.modes = Mates.modes || {};
 
 /** Escape a string for safe interpolation into HTML. */
 Mates.esc = function (s) {
@@ -16,8 +21,8 @@ Mates.esc = function (s) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 };
 
-/** Action handlers, keyed by the data-action attribute. */
-Mates.actions = {};
+/** Action handlers, keyed by the data-action attribute (shared with mode files). */
+Mates.actions = Mates.actions || {};
 
 const appEl = document.getElementById('app');
 
@@ -37,8 +42,8 @@ Mates.router = {
   }
 };
 
-/* ---------- Screens ---------- */
-Mates.screens = {
+/* ---------- Screens (merged with screens registered by mode files) ---------- */
+Mates.screens = Object.assign(Mates.screens || {}, {
 
   /** Profile selection grid. */
   profiles: function () {
@@ -79,10 +84,17 @@ Mates.screens = {
       empty + cards;
   },
 
-  /** Home for the active profile. Mode buttons land in Steps 3–6. */
+  /** Home for the active profile: greeting + practice-mode menu. */
   home: function () {
     const p = Mates.profiles.get(Mates.state.profileId);
     if (!p) { Mates.router.go('profiles'); return ''; }
+
+    let modes = '';
+    Object.keys(Mates.modes).forEach(function (key) {
+      const m = Mates.modes[key];
+      modes += '<button class="btn btn-primary mode-card" data-action="' + key + 'Enter">' +
+        m.icon + '  ' + Mates.t(m.nameKey) + '</button>';
+    });
 
     return '' +
       '<header class="header">' +
@@ -92,9 +104,9 @@ Mates.screens = {
         '<button class="icon-btn" data-action="openSettings" aria-label="' +
           Mates.t('common.settings') + '">⚙️</button>' +
       '</header>' +
-      '<div class="card empty-state">' +
-        '<p>' + Mates.t('home.hello', { name: Mates.esc(p.name) }) + '</p>' +
-      '</div>';
+      '<div class="card"><p class="home-hello">' +
+        Mates.t('home.hello', { name: Mates.esc(p.name) }) + '</p></div>' +
+      modes;
   },
 
   /** Avatar builder for a new profile. */
@@ -198,7 +210,7 @@ Mates.screens = {
           Mates.t('settings.sound') + '"><span class="knob"></span></button>' +
       '</div>';
   }
-};
+});
 
 /* ---------- Actions ---------- */
 Mates.actions.openSettings = function () {
@@ -290,6 +302,10 @@ appEl.addEventListener('input', function (e) {
 function boot() {
   Mates.loadSettings();
   Mates.applyTheme();
+  // Register one action per practice mode (home menu buttons).
+  Object.keys(Mates.modes).forEach(function (key) {
+    Mates.actions[key + 'Enter'] = Mates.modes[key].enter;
+  });
   Mates.router.go('profiles');
 }
 

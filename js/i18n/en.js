@@ -18,6 +18,25 @@ window.I18N.en = {
 
   'home.hello': 'Hi, {name}!',
   'home.switchUser': 'Switch profile',
+  'home.mode.level': 'Level practice',
+
+  'level.title': 'Pick a level',
+  'level.operation': 'Operation',
+  'level.level': 'Level',
+
+  'round.quit.confirm': 'Stop this round?',
+
+  'results.title': 'Round complete!',
+  'results.points': '+{n} points',
+  'results.levelReached': 'You reached level {n}',
+  'results.continue': 'Continue',
+
+  'feedback.praise1': 'Great!',
+  'feedback.praise2': 'Nice!',
+  'feedback.praise3': 'Yay!',
+  'feedback.praise4': 'Super!',
+  'feedback.praise5': 'Well done!',
+  'feedback.wrong': 'Almost! The answer was {n}',
 
   'builder.title': 'New profile',
   'builder.name': 'Name',

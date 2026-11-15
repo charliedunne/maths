@@ -13,6 +13,9 @@ const SCRIPTS = [
   'js/i18n.js',
   'js/avatar.js',
   'js/storage.js',
+  'js/questions.js',
+  'js/round.js',
+  'js/modes/level.js',
   'js/app.js'
 ];
 
@@ -69,8 +72,15 @@ function loadPage({ browserLang = 'en-US', systemDark = false } = {}) {
     },
     matchMedia: () => ({ matches: systemDark, addEventListener() {} }),
     scrollTo() {},
-    confirm: () => true // auto-accept delete confirmations
+    confirm: () => true // auto-accept confirmations
   };
+
+  /* Controllable timers: setTimeout callbacks are captured and fired on demand. */
+  const pendingTimeouts = [];
+  sandbox.setTimeout = fn => { pendingTimeouts.push(fn); return pendingTimeouts.length; };
+  sandbox.setInterval = () => 0; // ticks driven manually via Mates.round.tick()
+  sandbox.clearInterval = () => {};
+
   sandbox.window = sandbox; // window === globalThis, like in a browser
   vm.createContext(sandbox);
 
@@ -79,7 +89,10 @@ function loadPage({ browserLang = 'en-US', systemDark = false } = {}) {
     vm.runInContext(code, sandbox, { filename: rel });
   }
 
-  return { appEl, documentElement, ctx: sandbox };
+  return {
+    appEl, documentElement, ctx: sandbox,
+    flushTimers() { const fns = pendingTimeouts.splice(0); fns.forEach(fn => fn()); }
+  };
 }
 
 /* ---------- Load 1: first run, English browser, light system ---------- */
@@ -163,6 +176,102 @@ page.appEl.click({ dataset: { action: 'deleteProfile', id: lunaId } });
 check('Luna deleted from list', page.ctx.Mates.profiles.list().every(p => p.name !== 'Luna'));
 check('Luna data record removed', !store.has('mates.profile.' + lunaId));
 check('grid now shows only Max', page.appEl.innerHTML.includes('>Max<') && !page.appEl.innerHTML.includes('>Luna<'));
+
+/* ---------- Step 3: question generators + level mode (still load 1, ES) ---------- */
+console.log('step 3 (question generators + level mode)');
+
+const Q = page.ctx.Mates.questions;
+function sample(op, level, n) {
+  const out = [];
+  for (let i = 0; i < n; i++) out.push(Q.generate(op, level));
+  return out;
+}
+function assertAll(name, arr, pred) {
+  const bad = arr.find(q => !pred(q));
+  check(name + (bad ? ' — bad: ' + JSON.stringify(bad) : ''), !bad);
+}
+const inSet = arr => v => arr.includes(v);
+
+/* Generator invariants per operation/level */
+[[1, 10], [2, 20], [3, 100], [4, 999]].forEach(([lv, cap]) =>
+  assertAll('add L' + lv + ' within ' + cap, sample('add', lv, 60),
+    q => q.a >= 1 && q.b >= 1 && q.a + q.b === q.answer && q.a + q.b <= cap));
+assertAll('add L5 two 3-digit numbers', sample('add', 5, 60),
+  q => q.a >= 100 && q.a <= 899 && q.b >= 100 && q.b <= 899 && q.a + q.b === q.answer);
+
+[[1, 10], [2, 20], [3, 99], [4, 999]].forEach(([lv, cap]) =>
+  assertAll('sub L' + lv + ' non-negative within ' + cap, sample('sub', lv, 60),
+    q => q.a <= cap && q.b >= 1 && q.a - q.b === q.answer && q.answer >= 1));
+assertAll('sub L5 two 3-digit numbers', sample('sub', 5, 60),
+  q => q.a >= 200 && q.b >= 100 && q.a - q.b === q.answer);
+
+assertAll('mul L1 tables 2/5/10', sample('mul', 1, 60),
+  q => inSet([2, 5, 10])(q.a) && q.b <= 10 && q.a * q.b === q.answer);
+assertAll('mul L2 tables 3/4/6', sample('mul', 2, 60),
+  q => inSet([3, 4, 6])(q.a) && q.b <= 12 && q.a * q.b === q.answer);
+assertAll('mul L3 tables 7/8/9', sample('mul', 3, 60),
+  q => inSet([7, 8, 9])(q.a) && q.b <= 12 && q.a * q.b === q.answer);
+assertAll('mul L4 mixed tables 2-12', sample('mul', 4, 60),
+  q => q.a >= 2 && q.a <= 12 && q.b >= 2 && q.b <= 12 && q.a * q.b === q.answer);
+assertAll('mul L5 2-digit x 1-digit', sample('mul', 5, 60),
+  q => q.a >= 12 && q.a <= 99 && q.b >= 2 && q.b <= 9 && q.a * q.b === q.answer);
+
+assertAll('div L1 exact, tables 2/5/10', sample('div', 1, 60),
+  q => inSet([2, 5, 10])(q.b) && q.a % q.b === 0 && q.a / q.b === q.answer);
+assertAll('div L2 exact, divisor <= 9', sample('div', 2, 60),
+  q => q.b >= 2 && q.b <= 9 && q.a % q.b === 0 && q.a / q.b === q.answer);
+assertAll('div L3 2-digit dividend', sample('div', 3, 60),
+  q => q.a >= 10 && q.b >= 2 && q.b <= 9 && q.a % q.b === 0 && q.a / q.b === q.answer);
+assertAll('div L4 exact', sample('div', 4, 60),
+  q => q.a % q.b === 0 && q.a / q.b === q.answer);
+assertAll('div L5 3-digit dividend', sample('div', 5, 60),
+  q => q.a >= 100 && q.b <= 9 && q.a % q.b === 0 && q.a / q.b === q.answer);
+
+const round = Q.generateRound('add', 1, 10);
+check('round has 10 unique questions',
+  round.length === 10 && new Set(round.map(q => q.a + q.op + q.b)).size === 10);
+
+/* Level-mode flow: select Max -> setup -> full correct round */
+const max = page.ctx.Mates.profiles.list().find(p => p.name === 'Max');
+page.appEl.click({ dataset: { action: 'selectProfile', id: max.id } });
+check('home shows level mode button', page.appEl.innerHTML.includes('data-action="levelEnter"'));
+page.appEl.click({ dataset: { action: 'levelEnter' } });
+check('level setup screen (ES)', page.appEl.innerHTML.includes('Elige un nivel'));
+page.appEl.click({ dataset: { action: 'levelSetOp', op: 'add' } });
+page.appEl.click({ dataset: { action: 'levelSetLevel', value: '1' } });
+page.appEl.click({ dataset: { action: 'levelStart' } });
+check('round screen rendered', page.appEl.innerHTML.includes('= ?'));
+
+for (let i = 0; i < 10; i++) {
+  const s = page.ctx.Mates.round.peek();
+  String(s.question.answer).split('').forEach(d =>
+    page.appEl.click({ dataset: { action: 'keypad', key: d } }));
+  page.appEl.click({ dataset: { action: 'keypad', key: 'enter' } });
+  page.flushTimers(); // fire the feedback-delay advance
+}
+check('results screen shows 10 / 10', page.appEl.innerHTML.includes('10 / 10'));
+check('points shown (+100, ES)', page.appEl.innerHTML.includes('+100 puntos'));
+let d = page.ctx.Mates.profileData.get(max.id);
+check('stats + points recorded', d.stats.add.answered === 10 && d.stats.add.correct === 10 && d.points === 100);
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
+/* Wrong-answer path: feedback shows correct value, then advances */
+page.appEl.click({ dataset: { action: 'levelEnter' } });
+page.appEl.click({ dataset: { action: 'levelStart' } });
+const s2 = page.ctx.Mates.round.peek();
+String(s2.question.answer + 1).split('').forEach(dg =>
+  page.appEl.click({ dataset: { action: 'keypad', key: dg } }));
+page.appEl.click({ dataset: { action: 'keypad', key: 'enter' } });
+const s3 = page.ctx.Mates.round.peek();
+check('wrong answer locks with feedback + correct value',
+  s3.locked && s3.feedback.type === 'no' && s3.feedback.text.includes(String(s2.question.answer)));
+page.flushTimers();
+const s4 = page.ctx.Mates.round.peek();
+check('advanced to question 2, score still 0', s4.index === 1 && s4.score === 0);
+
+/* Quit mid-round returns to setup */
+page.appEl.click({ dataset: { action: 'roundQuit' } });
+check('quit returns to level setup', page.appEl.innerHTML.includes('Elige un nivel'));
 
 /* ---------- Load 2: simulated reload, different browser lang ---------- */
 console.log('load 2 (reload, fr-FR browser — saved settings must win)');

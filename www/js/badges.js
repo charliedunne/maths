@@ -12,7 +12,7 @@ Mates.badges = (function () {
     { id: 'sharp-shooter', icon: '🎯', nameKey: 'badge.sharp-shooter.name', descKey: 'badge.sharp-shooter.desc',
       check: function (d, res) { return !!res && !res.timed && !res.adaptive && res.count === 10 && res.score === 10; } },
     { id: 'speed-demon', icon: '⚡', nameKey: 'badge.speed-demon.name', descKey: 'badge.speed-demon.desc',
-      check: function (d, res) { return !!res && res.timed && res.score >= 20; } },
+      check: function (d, res) { return !!res && res.timed && res.success && res.level === 5; } },
     { id: 'table-master', icon: '✖️', nameKey: 'badge.table-master.name', descKey: 'badge.table-master.desc',
       check: function (d) { return d.stats.mul.correct >= 50; } },
     { id: 'divvy-up', icon: '➗', nameKey: 'badge.divvy-up.name', descKey: 'badge.divvy-up.desc',

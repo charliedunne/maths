@@ -57,7 +57,10 @@ Mates.round = (function () {
       feedback: null, // { type: 'ok'|'no', text }
       streakCorrect: 0,
       streakWrong: 0,
-      timeLeft: cfg.timed ? 60 : 0,
+      goal: cfg.goal || null, // { target, time } for the goal-based challenge
+      success: false,
+      elapsed: 0,             // seconds used to reach the goal (on success)
+      timeLeft: cfg.timed ? (cfg.goal ? cfg.goal.time : 60) : 0,
       timerId: null,
       // Timed rounds run until the clock hits 0: no fixed count, questions
       // are generated on demand (also required for "mixed" operation).
@@ -114,7 +117,8 @@ Mates.round = (function () {
     const timer = document.getElementById('roundTimer');
     if (timer) timer.textContent = r.timed ? '⏱ ' + r.timeLeft : (r.index + 1) + ' / ' + r.count;
     const score = document.getElementById('roundScore');
-    if (score) score.textContent = String(r.score);
+    // Goal-based challenges show progress toward the target, e.g. "3 / 8".
+    if (score) score.textContent = r.goal ? r.score + ' / ' + r.goal.target : String(r.score);
     const chip = document.getElementById('roundLevelChip');
     if (chip) chip.textContent = Mates.t('round.level', { n: r.level });
     const q = currentQuestion();
@@ -174,10 +178,17 @@ Mates.round = (function () {
     }
 
     if (r.timed) {
+      if (r.goal && correct && r.score >= r.goal.target) {
+        // Goal reached: end the challenge early with the elapsed time.
+        r.success = true;
+        r.elapsed = r.goal.time - r.timeLeft;
+        finish();
+        return;
+      }
       // Straight to the next question (no delay); a quick ✓/✗ pop over the
       // card shows whether the answer was right without slowing the pace.
-      advance();
       flash(correct);
+      advance();
       return;
     }
 
@@ -207,7 +218,11 @@ Mates.round = (function () {
     const onComplete = r.onComplete;
     const results = {
       op: r.op, count: r.index, score: r.score,
-      level: r.level, timed: r.timed, adaptive: r.adaptive
+      level: r.level, timed: r.timed, adaptive: r.adaptive,
+      goal: r.goal || null,
+      success: !!r.success,
+      // Seconds used: the finish time on success, the full limit otherwise.
+      elapsed: r.goal ? (r.success ? r.elapsed : r.goal.time) : null
     };
     if (r.timerId) clearInterval(r.timerId);
     r = null;
@@ -237,6 +252,7 @@ Mates.round = (function () {
       op: r.op, level: r.level, index: r.index, count: r.count,
       score: r.score, input: r.input, locked: r.locked,
       timed: r.timed, adaptive: r.adaptive, timeLeft: r.timeLeft,
+      goal: r.goal,
       feedback: r.feedback, question: currentQuestion()
     };
   }
@@ -274,7 +290,8 @@ Mates.round = (function () {
       '<header class="header">' +
         '<button class="icon-btn" data-action="roundQuit" aria-label="' + Mates.t('common.cancel') + '">✕</button>' +
         '<h1 class="title round-center" id="roundTimer">' + center + '</h1>' +
-        (s.timed ? '<span class="score-chip" id="roundScore">' + s.score + '</span>' : '<span></span>') +
+        (s.timed ? '<span class="score-chip" id="roundScore">' +
+          (s.goal ? s.score + ' / ' + s.goal.target : s.score) + '</span>' : '<span></span>') +
       '</header>' +
 
       '<div class="card round-card">' +
@@ -294,11 +311,29 @@ Mates.round = (function () {
     const res = Mates.state.lastResults;
     if (!res) { Mates.router.go('home'); return ''; }
 
+    let banner = '';
     let extra = '';
     if (res.adaptive) {
       extra += '<p class="results-extra">' + Mates.t('results.levelReached', { n: res.level }) + '</p>';
     }
-    if (res.timed) {
+    if (res.timed && res.goal) {
+      // Goal-based challenge: celebrate a success or encourage a retry.
+      if (res.success) {
+        banner = '<div class="results-banner results-banner-win">' +
+          '<div class="results-banner-title">🎉 ' + Mates.t('results.success') + '</div>' +
+          '<p class="results-extra">' + Mates.t('results.successTime', { n: res.elapsed }) + '</p></div>';
+        if (res.highScore) {
+          extra += '<p class="' + (res.highScore.isNew ? 'results-record' : 'results-extra') + '">' +
+            (res.highScore.isNew ? '🏆 ' : '') +
+            Mates.t('results.bestTime', { n: res.highScore.best }) + '</p>';
+        }
+      } else {
+        banner = '<div class="results-banner results-banner-lose">' +
+          '<div class="results-banner-title">💪 ' +
+          Mates.t('results.fail', { got: res.score, target: res.goal.target }) + '</div></div>';
+      }
+    } else if (res.timed) {
+      // Legacy timed rounds without a goal: answered count + old record line.
       extra += '<p class="results-extra">' + Mates.t('results.answered', { n: res.count }) + '</p>';
       if (res.highScore) {
         extra += res.highScore.isNew
@@ -315,18 +350,31 @@ Mates.round = (function () {
         }).join('') + '</div>';
     }
 
-    const scoreLine = res.timed ? String(res.score) : res.score + ' / ' + res.count;
+    const scoreLine = res.timed
+      ? (res.goal ? res.score + ' / ' + res.goal.target : String(res.score))
+      : res.score + ' / ' + res.count;
+    const points = res.score * 10 + (res.bonus || 0);
+    // "Try again" restarts the same challenge; only offered after a failure.
+    const retryBtn = (res.timed && res.goal && !res.success && res.retry)
+      ? '<button class="btn btn-primary" data-action="resultsRetry">' +
+          Mates.t('results.retry') + '</button>' +
+        '<button class="btn btn-ghost" data-action="resultsContinue">' +
+          Mates.t('results.continue') + '</button>'
+      : '';
 
     return '' +
       '<header class="header"><span></span>' +
         '<h1 class="title">' + Mates.t('results.title') + '</h1><span></span></header>' +
       '<div class="card empty-state">' +
+        banner +
         '<div class="results-score">' + scoreLine + '</div>' +
-        '<p class="results-points">' + Mates.t('results.points', { n: res.score * 10 }) + '</p>' +
+        '<p class="results-points">' + Mates.t('results.points', { n: points }) + '</p>' +
+        (res.bonus ? '<p class="results-extra">🎁 ' +
+          Mates.t('results.bonus', { n: res.bonus }) + '</p>' : '') +
         extra +
       '</div>' +
-      '<button class="btn btn-primary" data-action="resultsContinue">' +
-        Mates.t('results.continue') + '</button>';
+      (retryBtn || '<button class="btn btn-primary" data-action="resultsContinue">' +
+        Mates.t('results.continue') + '</button>');
   };
 
   /* ---------- Actions + keyboard ---------- */
@@ -341,6 +389,14 @@ Mates.round = (function () {
   Mates.actions.resultsContinue = function () {
     Mates.state.lastResults = null;
     Mates.router.go('home');
+  };
+
+  /** "Try again": restart the same goal-based challenge after a failure. */
+  Mates.actions.resultsRetry = function () {
+    const res = Mates.state.lastResults;
+    if (!res || !res.retry) return;
+    Mates.state.lastResults = null;
+    res.retry();
   };
 
   /* Physical keyboard support while the round screen is up. */

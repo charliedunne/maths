@@ -126,10 +126,33 @@ function profileDataDefaults() {
     lastPracticeDate: null, // 'YYYY-MM-DD' of the last practiced day
     badges: [],
     stats: stats,
-    highScores: {},         // keyed like 'timed.mul.3' or 'timed.mixed'
-    adaptiveLevel: { add: 2, sub: 2, mul: 2, div: 2 }
+    highScores: {},         // legacy count-based timed records (no longer written)
+    adaptiveLevel: { add: 2, sub: 2, mul: 2, div: 2 },
+    timedGoal: { target: 8, time: 45 }, // goal-based challenge: N correct in T seconds
+    timedBest: {}           // fastest times (seconds) to reach the goal, keyed like 'mul.3' or 'mixed'
   };
 }
+
+/* ---------- Timed-challenge goal (per profile) ---------- */
+Mates.timedGoal = {
+  DEFAULTS: { target: 8, time: 45 },
+  /** Clamp a goal value into its allowed range (target 1-30, time 10-300 s). */
+  clamp: function (field, value) {
+    const v = Math.round(Number(value));
+    if (!isFinite(v)) return this.DEFAULTS[field];
+    if (field === 'target') return Math.min(30, Math.max(1, v));
+    if (field === 'time') return Math.min(300, Math.max(10, v));
+    return v;
+  },
+  /** A profile's goal, clamped to limits (safe defaults on missing/corrupt data). */
+  get: function (profileId) {
+    const g = Mates.profileData.get(profileId || Mates.state.profileId).timedGoal || {};
+    return {
+      target: this.clamp('target', g.target),
+      time: this.clamp('time', g.time)
+    };
+  }
+};
 
 Mates.profileData = {
   /** Load a profile's data with defaults merged in (safe for new profiles). */
@@ -141,6 +164,12 @@ Mates.profileData = {
       d.stats[op] = Object.assign({ answered: 0, correct: 0 }, (saved.stats || {})[op]);
     });
     d.adaptiveLevel = Object.assign({ add: 2, sub: 2, mul: 2, div: 2 }, saved.adaptiveLevel);
+    d.timedGoal = Object.assign({ target: 8, time: 45 }, saved.timedGoal);
+    d.timedBest = Object.assign({}, saved.timedBest);
+    // Migration: drop obsolete count-based 'timed.*' high-score keys on read.
+    Object.keys(d.highScores).forEach(function (k) {
+      if (k.indexOf('timed.') === 0) delete d.highScores[k];
+    });
     return d;
   },
 

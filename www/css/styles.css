@@ -247,6 +247,32 @@ body {
 
 .setting-label { font-weight: 700; }
 
+/* ---------- Goal stepper (profile settings) ---------- */
+.stepper { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+
+.stepper-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stepper-btn:disabled { opacity: 0.35; cursor: default; }
+
+.stepper-value {
+  min-width: 56px;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- Empty state ---------- */
 .empty-state {
   text-align: center;
@@ -296,6 +322,23 @@ body {
 .profile-delete {
   position: absolute;
   top: -8px;
+  right: -8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Goal-editor button, bottom-right corner of a profile card. */
+.profile-gear {
+  position: absolute;
+  bottom: -8px;
   right: -8px;
   width: 32px;
   height: 32px;
@@ -596,6 +639,19 @@ body {
   font-weight: 800;
   color: var(--warning);
 }
+
+/* Goal-based challenge outcome banner (success / so-close). */
+.results-banner {
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.results-banner-win { background: var(--success-soft); }
+.results-banner-lose { background: var(--danger-soft); }
+
+.results-banner-title { font-size: 1.5rem; font-weight: 800; }
 
 /* ---------- Welcome (first launch) ---------- */
 .welcome-card {

@@ -7,8 +7,8 @@
 4. When all boxes of a step are done: mark them `[x]`, update **Current status**, and `git commit` (user=charliedunne, email=charlie.dunne@gmail.com).
 
 ## Current status
-- Step in progress: **Step 9 — Capacitor → Android APK**
-- Last updated: 2026-11-15 — Steps 1–8 complete; Step 9 scaffold done (www/ layout, android platform added, Mates launcher icons rendered) — APK build pending a machine with Java 17 + Android SDK. Round-screen flicker fix extended to keypad/answer updates (in-place DOM patching, see Corrections); timed mode now shows a ✓/✗ flash per answer. 131 smoke assertions pass
+- Step in progress: **Step 9 — Capacitor → Android APK** (only box 5 left: debug APK build, blocked on this machine)
+- Last updated: 2026-11-15 — Steps 1–8 complete; Step 10 (goal-based timed challenge) complete: per-profile goal editor (⚙ steppers), early end on success/failure + Try again, fastest-time records (`timedBest`), +20 success bonus, speed-demon redefined to "complete a level-5 challenge". 162 smoke assertions pass. Remaining: build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5).
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -27,7 +27,7 @@ Web app for primary-school maths practice (ages 5–11). **Arithmetic only**: ad
 - **i18n rule (hard)**: every user-facing string goes through `t(key)` from the i18n catalogs. Never hardcode UI text in HTML/JS. Both `en` and `es` must be complete for every screen before a step is done.
 - **Themes**: all colors as CSS custom properties — light defaults on `:root`, dark under `[data-theme="dark"]`. Cozy palettes: light = warm cream/soft peach; dark = deep warm navy/brown (never pure black, never harsh white). Default follows system preference; user override persisted.
 - **Persistence**: `localStorage` only, JSON values, keys: `mates.settings`, `mates.profiles`, `mates.profile.<id>`.
-- **Points**: 10 pts per correct answer (all modes), lifetime total per profile.
+- **Points**: 10 pts per correct answer (all modes), lifetime total per profile. Goal-based challenge success adds a +20 bonus.
 - **Streaks**: at least one completed round per calendar day keeps the streak alive; track current + best.
 - **Questions**: answers always non-negative and exact (no negatives, no remainders). No immediate duplicate questions within a round.
 - **Touch-first UI**: big buttons (≥ 48 px targets), on-screen number keypad in practice, minimal text.
@@ -44,15 +44,15 @@ Web app for primary-school maths practice (ages 5–11). **Arithmetic only**: ad
 ### Adaptive rules
 Start at the profile's saved level for that operation (default 2). Step **up** after 3 consecutive correct, step **down** after 2 wrong. Clamp to 1–5. Round = 10 questions. Save the reached level back to the profile.
 
-### Timed challenge
-60-second countdown. Pick operation + level, or "mixed" (all four operations). Instant confirm per answer, auto-advance — no delay, so a quick ✓/✗ pop (`#roundFlash`, 500 ms CSS animation on the round card) is the visual right/wrong indication alongside the sound. Score = correct count. High score saved per profile + mode key.
+### Timed challenge (goal-based, Step 10)
+Reach **N correct within T seconds**. N and T are a per-profile goal (`timedGoal: { target, time }`, default 8 / 45 s), editable on the `profileSettings` screen via +/− steppers (⚙ button on each profile card; steps ±1 target / ±5 s time; limits target 1–30, time 10–300 s). Pick operation + level, or "mixed" (all four operations at fixed level 2) — the goal applies to all. Instant confirm per answer, auto-advance — no delay, so a quick ✓/✗ pop (`#roundFlash`, 500 ms CSS animation on the round card) is the visual right/wrong indication alongside the sound. Wrong answers have no penalty. The round ends early when the target is reached (success → 🎉 banner + elapsed time + fastest-time record; failure at 0 s below target → encouraging message + Try again). Points = score × 10, plus a +20 success bonus. Best time per key (`timedBest`, seconds, lower is better, success only) replaces the old count-based high scores — obsolete `timed.*` keys are stripped by a read-time migration in `profileData.get()`.
 
 ### Badges
 | id | Condition |
 |---|---|
 | first-steps | complete first round |
 | sharp-shooter | 10/10 in a level-mode round |
-| speed-demon | ≥ 20 correct in one timed round |
+| speed-demon | complete a level-5 challenge (goal-based success) |
 | table-master | 50 lifetime correct multiplications |
 | divvy-up | 50 lifetime correct divisions |
 | on-fire | 5-day streak |
@@ -67,7 +67,9 @@ mates.profile.<id> = {
   currentStreak: number, bestStreak: number, lastPracticeDate: 'YYYY-MM-DD'|null,
   badges: [badgeId],
   stats: { add:{answered,correct}, sub:{...}, mul:{...}, div:{...} },
-  highScores: { 'timed.<op>.<level|mixed>': score },
+  highScores: { 'level.<op>.<level>': score },
+  timedGoal: { target: 1-30, time: 10-300 },        // challenge goal (default 8 / 45 s)
+  timedBest: { '<op>.<level>'|'mixed': seconds },   // fastest time to reach the goal (lower is better)
   adaptiveLevel: { add:1-5, sub:1-5, mul:1-5, div:1-5 }
 }
 avatar = { face:0-2, skin:0-5, hair:0-5 (0=bald), hairColor:0-6, eyes:0-2, mouth:0-2 }
@@ -209,6 +211,19 @@ Notes (Step 9):
 - `android/` source is committed; build artifacts ignored via `.gitignore` (`android/.gradle/`, `android/build/`, `android/app/build/`, `android/local.properties`).
 - Launcher icons: sources in `www/icons/android/` — `foreground.svg` (transparent, M+dot scaled 0.70× about centre so all ink fits the 66dp safe zone), `square.svg` + `round.svg` (full-bleed terracotta, pre-API-26 fallbacks). Rendered with rsvg-convert into `mipmap-{mdpi…xxxhdpi}`: foreground 108/162/216/324/432 px, square+round 48/72/96/144/192 px. Adaptive background color = #ef7d54 (`values/ic_launcher_background.xml`).
 - Box 5 blocked on this machine: no Java, no Android SDK (ANDROID_HOME unset). Build later with `npm run cap:sync && cd android && ./gradlew assembleDebug` on a machine with JDK 17 + Android SDK; then install and verify offline behavior + both themes.
+
+### Step 10 — Goal-based timed challenge ✅
+- [x] Storage (`storage.js`): profile defaults gain `timedGoal: { target: 8, time: 45 }` + `timedBest: {}`; `Mates.timedGoal` helper (clamp/get); read-time migration in `profileData.get()` strips obsolete count-based `timed.*` high-score keys
+- [x] Profile settings screen (`app.js`): ⚙ button on each profile card opens `profileSettings` — target ±1 / time ±5 stepper rows, self-disabling at limits (target 1–30, time 10–300 s)
+- [x] Round engine (`round.js`): goal passed via cfg; countdown starts at `goal.time`; early end when the target is reached (`success`, `elapsed = goal.time − timeLeft`); progress chip `score / target`; results screen with success banner (🎉 + "in X s" + fastest-time record line) and failure banner (💪 + Try again, restarts same op/level with a fresh goal read from profile data); legacy branch kept for timed rounds without a goal
+- [x] Timed mode (`timed.js`): setup screen shows the goal line + best time for the selected key; `startTimedChallenge()` shared by start and retry; `recordTimedRound`: on success points += 20 bonus (`res.bonus`) and fastest elapsed into `timedBest[key]` (`'mixed'` or `'op.level'`, lower is better, success only)
+- [x] Home high-scores card now lists best challenge times ("⏱ N s" per key) instead of count-based scores
+- [x] speed-demon badge redefined: `res.timed && res.success && res.level === 5` (complete a level-5 challenge); i18n desc updated in both languages
+- [x] CSS: `.profile-gear`, stepper styles, results banners (`.results-banner-win/-lose`)
+- [x] i18n EN + ES complete for all new strings
+- [x] Test: smoke.mjs step 5 rewritten — goal editor flow + clamps, migration, early success end + bonus + record line, slower-success path, failure + retry path, mixed mode with goal, home best-times card; speed-demon now tested via an L5 success. 162 assertions pass
+- [x] SW cache bumped to `mates-v3`
+- [x] `git commit`
 
 ---
 

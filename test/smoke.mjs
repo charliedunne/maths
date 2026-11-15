@@ -331,25 +331,78 @@ let d4 = page.ctx.Mates.profileData.get(max.id);
 check('reached level persisted per operation', d4.adaptiveLevel.add === 3);
 page.appEl.click({ dataset: { action: 'resultsContinue' } });
 
-/* ---------- Step 5: timed challenge (still load 1, ES) ---------- */
-console.log('step 5 (timed challenge)');
+/* ---------- Step 5: goal-based timed challenge (still load 1, ES) ---------- */
+console.log('step 5 (goal-based timed challenge)');
 
+/* Goal editor: the ⚙ on a profile card opens per-profile target/time steppers. */
+page.appEl.click({ dataset: { action: 'switchUser' } });
+check('profile cards show goal gear button', page.appEl.innerHTML.includes('data-action="openProfileSettings"'));
+page.appEl.click({ dataset: { action: 'openProfileSettings', id: max.id } });
+check('goal editor screen (ES)', page.appEl.innerHTML.includes('Objetivo del reto</h1>'));
+check('default goal shown: 8 correct in 45 s', page.appEl.innerHTML.includes('>8<') && page.appEl.innerHTML.includes('>45<'));
+page.appEl.click({ dataset: { action: 'goalStep', field: 'target', delta: '-1' } });
+check('target stepper decrements to 7', page.appEl.innerHTML.includes('>7<'));
+page.appEl.click({ dataset: { action: 'goalStep', field: 'target', delta: '1' } });
+check('target stepper back to 8', page.appEl.innerHTML.includes('>8<'));
+page.appEl.click({ dataset: { action: 'goalStep', field: 'time', delta: '5' } });
+check('time stepper steps by 5 s (50)', page.appEl.innerHTML.includes('>50<'));
+page.appEl.click({ dataset: { action: 'goalStep', field: 'time', delta: '-5' } });
+check('time stepper back to 45', page.appEl.innerHTML.includes('>45<'));
+
+/* Steppers clamp at the limits (target 1–30, time 10–300 s). */
+{
+  const d = page.ctx.Mates.profileData.get(max.id);
+  d.timedGoal = { target: 1, time: 10 }; // push both fields to their minimums
+  page.ctx.Mates.profileData.save(max.id, d);
+}
+page.appEl.click({ dataset: { action: 'profileSettingsBack' } });
+page.appEl.click({ dataset: { action: 'openProfileSettings', id: max.id } });
+check('minus disabled at target minimum (1)', /data-field="target" data-delta="-1" disabled/.test(page.appEl.innerHTML));
+check('minus disabled at time minimum (10 s)', /data-field="time" data-delta="-5" disabled/.test(page.appEl.innerHTML));
+page.appEl.click({ dataset: { action: 'goalStep', field: 'target', delta: '1' } });
+check('plus still works at the minimum (target 2)', page.appEl.innerHTML.includes('>2<'));
+page.appEl.click({ dataset: { action: 'goalStep', field: 'time', delta: '-5' } });
+check('minus clamps at time minimum (still 10 s)', page.appEl.innerHTML.includes('>10<'));
+{
+  const d = page.ctx.Mates.profileData.get(max.id);
+  d.timedGoal = { target: 8, time: 45 }; // restore defaults for the rounds below
+  page.ctx.Mates.profileData.save(max.id, d);
+}
+page.appEl.click({ dataset: { action: 'profileSettingsBack' } });
+page.appEl.click({ dataset: { action: 'selectProfile', id: max.id } });
+
+/* Migration: obsolete count-based 'timed.*' high-score keys are dropped on read. */
+{
+  const d = page.ctx.Mates.profileData.get(max.id);
+  d.highScores['timed.mul.3'] = 3; // simulate a pre-goal-based save
+  d.highScores['level.add.2'] = 5; // unrelated key must survive
+  page.ctx.Mates.storage.set('mates.profile.' + max.id, d);
+}
+{
+  const d = page.ctx.Mates.profileData.get(max.id);
+  check('migration drops timed.* high-score keys on read', !('timed.mul.3' in d.highScores));
+  check('migration keeps other high-score keys', d.highScores['level.add.2'] === 5);
+}
+
+/* Success: reaching the goal ends the challenge early with a celebration. */
 page.appEl.click({ dataset: { action: 'timedEnter' } });
 check('timed setup screen (ES)', page.appEl.innerHTML.includes('Reto contrarreloj</h1>'));
+check('setup shows the profile goal line', page.appEl.innerHTML.includes('Objetivo: 8 aciertos en 45 s'));
 page.appEl.click({ dataset: { action: 'timedSetOp', op: 'mul' } });
 page.appEl.click({ dataset: { action: 'timedSetLevel', value: '3' } });
 check('level picker visible for single operation', page.appEl.innerHTML.includes('data-action="timedSetLevel"'));
 page.appEl.click({ dataset: { action: 'timedStart' } });
 
 let t = page.ctx.Mates.round.peek();
-check('timed round starts at 60 s', t.timed && t.timeLeft === 60);
-check('countdown shown in round header', page.appEl.innerHTML.includes('⏱ 60'));
-check('score chip present in timed round', page.appEl.innerHTML.includes('score-chip'));
+check('timed round starts at goal time (45 s)', t.timed && t.timeLeft === 45 && t.goal.target === 8);
+check('countdown shown in round header', page.appEl.innerHTML.includes('⏱ 45'));
+check('progress chip shows score / target', page.appEl.innerHTML.includes('>0 / 8<'));
 check('answer flash element present in round UI', page.appEl.innerHTML.includes('id="roundFlash"'));
 
+const ptsBefore = page.ctx.Mates.profileData.get(max.id).points;
 answer(true); answer(true); answer(true);
 t = page.ctx.Mates.round.peek();
-check('instant confirm: score 3 without waiting', t.score === 3 && t.timeLeft === 60);
+check('instant confirm: score 3 without waiting', t.score === 3 && t.timeLeft === 45);
 answer(false);
 check('wrong answer keeps score at 3', page.ctx.Mates.round.peek().score === 3);
 
@@ -358,7 +411,7 @@ check('wrong answer keeps score at 3', page.ctx.Mates.round.peek().score === 3);
 let refreshes = 0;
 const origRefresh = page.ctx.Mates.router.refresh;
 page.ctx.Mates.router.refresh = function () { refreshes++; return origRefresh.apply(this, arguments); };
-for (let i = 0; i < 59; i++) page.ctx.Mates.round.tick();
+for (let i = 0; i < 2; i++) page.ctx.Mates.round.tick(); // 45 -> 43 s left
 check('timer ticks do not re-render the round screen', refreshes === 0);
 ['1', '2', '3'].forEach(d => page.appEl.click({ dataset: { action: 'keypad', key: d } }));
 page.appEl.click({ dataset: { action: 'keypad', key: 'back' } });
@@ -366,43 +419,82 @@ page.appEl.click({ dataset: { action: 'keypad', key: 'back' } });
 page.appEl.click({ dataset: { action: 'keypad', key: 'back' } });
 check('keypad presses do not re-render the round screen', refreshes === 0);
 page.ctx.Mates.router.refresh = origRefresh;
-check('one second left before end', page.ctx.Mates.round.peek().timeLeft === 1);
-page.ctx.Mates.round.tick();
-check('timer end renders results with bare score', page.appEl.innerHTML.includes('results-score">3<'));
-check('new record celebration (ES)', page.appEl.innerHTML.includes('¡Nuevo récord!'));
-check('answered count shown (ES)', page.appEl.innerHTML.includes('4 preguntas respondidas'));
-check('timed points shown (+30, ES)', page.appEl.innerHTML.includes('+30 puntos'));
+page.ctx.Mates.round.tick(); // 43 -> 42 s left
+
+answer(true); answer(true); answer(true); answer(true); answer(true); // 8th correct hits the goal
+check('goal reached: round ended early', page.ctx.Mates.round.peek() === null);
+check('success banner (ES)', page.appEl.innerHTML.includes('🎉 ¡Lo lograste!'));
+check('elapsed time shown (3 s, ES)', page.appEl.innerHTML.includes('en 3 s'));
+check('score line shows goal progress', page.appEl.innerHTML.includes('>8 / 8<'));
+check('points include +20 success bonus (+100, ES)', page.appEl.innerHTML.includes('+100 puntos'));
+check('bonus line shown (ES)', page.appEl.innerHTML.includes('🎁 +20 puntos extra'));
+check('new fastest-time record (ES)', page.appEl.innerHTML.includes('🏆 Más rápido: 3 s'));
 let d6 = page.ctx.Mates.profileData.get(max.id);
-check('high score persisted for timed.mul.3', d6.highScores['timed.mul.3'] === 3);
+check('points: score×10 + 20 bonus', d6.points === ptsBefore + 100);
+check('fastest time persisted for mul.3', d6.timedBest['mul.3'] === 3);
+check('no legacy count-based record written', !('timed.mul.3' in d6.highScores));
 page.appEl.click({ dataset: { action: 'resultsContinue' } });
 
-/* Second timed round, lower score: shows best, no new record */
+/* Second success, slower: no new record, stored best unchanged. */
 page.appEl.click({ dataset: { action: 'timedEnter' } });
 page.appEl.click({ dataset: { action: 'timedSetOp', op: 'mul' } });
 page.appEl.click({ dataset: { action: 'timedSetLevel', value: '3' } });
 page.appEl.click({ dataset: { action: 'timedStart' } });
-answer(true);
-for (let i = 0; i < 60; i++) page.ctx.Mates.round.tick();
-check('best shown instead of new record (ES)', page.appEl.innerHTML.includes('Mejor: 3') && !page.appEl.innerHTML.includes('¡Nuevo récord!'));
+for (let i = 0; i < 10; i++) page.ctx.Mates.round.tick(); // 45 -> 35 s left
+for (let i = 0; i < 8; i++) answer(true);
+check('slower success: no new-record trophy', !page.appEl.innerHTML.includes('🏆'));
+check('this run time shown without record (ES)', page.appEl.innerHTML.includes('Más rápido: 10 s'));
 d6 = page.ctx.Mates.profileData.get(max.id);
-check('high score unchanged after lower run', d6.highScores['timed.mul.3'] === 3);
+check('stored best unchanged after slower run', d6.timedBest['mul.3'] === 3);
 page.appEl.click({ dataset: { action: 'resultsContinue' } });
 
-/* Mixed mode: no level picker, questions span operations */
+/* Failure: clock hits 0 below the goal -> encouraging message + Try again. */
+page.appEl.click({ dataset: { action: 'timedEnter' } });
+page.appEl.click({ dataset: { action: 'timedSetOp', op: 'mul' } });
+page.appEl.click({ dataset: { action: 'timedSetLevel', value: '3' } });
+page.appEl.click({ dataset: { action: 'timedStart' } });
+answer(true); answer(true); answer(true);
+for (let i = 0; i < 45; i++) page.ctx.Mates.round.tick();
+check('failure banner (ES)', page.appEl.innerHTML.includes('💪 ¡Casi! Conseguiste 3 de 8'));
+check('failure score line', page.appEl.innerHTML.includes('>3 / 8<'));
+check('no bonus on failure', !page.appEl.innerHTML.includes('🎁'));
+check('try-again button offered (ES)', page.appEl.innerHTML.includes('data-action="resultsRetry"') && page.appEl.innerHTML.includes('Intentar otra vez'));
+d6 = page.ctx.Mates.profileData.get(max.id);
+check('no record written on failure', d6.timedBest['mul.3'] === 3 && !('timed.mul.3' in d6.highScores));
+
+/* Try again restarts the same challenge with a fresh goal from profile data. */
+page.appEl.click({ dataset: { action: 'resultsRetry' } });
+t = page.ctx.Mates.round.peek();
+check('retry starts a fresh round at full time', t.timed && t.timeLeft === 45 && t.goal.target === 8 && t.score === 0);
+page.ctx.Mates.round.tick(); // 44 s left -> elapsed will be 1 s
+for (let i = 0; i < 8; i++) answer(true);
+check('retry success beats the old best (ES)', page.appEl.innerHTML.includes('🏆 Más rápido: 1 s'));
+d6 = page.ctx.Mates.profileData.get(max.id);
+check('faster time replaces the record', d6.timedBest['mul.3'] === 1);
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
+/* Mixed mode: no level picker, questions span operations, goal still applies */
 page.appEl.click({ dataset: { action: 'timedEnter' } });
 page.appEl.click({ dataset: { action: 'timedSetOp', op: 'mixed' } });
 check('level picker hidden for mixed', !page.appEl.innerHTML.includes('data-action="timedSetLevel"'));
+check('goal line still shown for mixed', page.appEl.innerHTML.includes('Objetivo: 8 aciertos en 45 s'));
 page.appEl.click({ dataset: { action: 'timedStart' } });
 
 const seenOps = new Set();
+page.ctx.Mates.round.tick(); // one second passes so elapsed is 1, not 0
 for (let i = 0; i < 8; i++) {
   seenOps.add(page.ctx.Mates.round.peek().question.op);
   answer(true);
 }
 check('mixed round spans multiple operations', seenOps.size >= 2);
-for (let i = 0; i < 60; i++) page.ctx.Mates.round.tick();
+check('mixed success banner (ES)', page.appEl.innerHTML.includes('🎉 ¡Lo lograste!'));
 d6 = page.ctx.Mates.profileData.get(max.id);
-check('high score persisted for timed.mixed', d6.highScores['timed.mixed'] === 8);
+check('fastest time persisted for mixed', d6.timedBest['mixed'] === 1);
+
+/* Home now lists best challenge times instead of old count-based scores. */
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+check('home shows best-times card (ES)', page.appEl.innerHTML.includes('>Récords<'));
+check('home lists mul L3 with its best time', page.appEl.innerHTML.includes('× L3') && page.appEl.innerHTML.includes('⏱ 1 s'));
 
 /* ---------- Step 6: gamification (still load 1, ES) ---------- */
 console.log('step 6 (gamification)');
@@ -472,14 +564,14 @@ levelRound('div', 1, 1);
 d7 = P();
 check('divvy-up earned at 50 div correct', d7.badges.includes('divvy-up'));
 
-/* speed-demon: 20 correct in one timed round */
+/* speed-demon: complete a level-5 challenge */
 page.appEl.click({ dataset: { action: 'timedEnter' } });
-page.appEl.click({ dataset: { action: 'timedSetOp', op: 'mixed' } });
+page.appEl.click({ dataset: { action: 'timedSetOp', op: 'add' } });
+page.appEl.click({ dataset: { action: 'timedSetLevel', value: '5' } });
 page.appEl.click({ dataset: { action: 'timedStart' } });
-for (let i = 0; i < 20; i++) answer(true);
-for (let i = 0; i < 60; i++) page.ctx.Mates.round.tick();
+for (let i = 0; i < 8; i++) answer(true); // goal reached -> level-5 success
 d7 = P();
-check('speed-demon earned at 20 timed correct', d7.badges.includes('speed-demon'));
+check('speed-demon earned on a level-5 challenge', d7.badges.includes('speed-demon'));
 page.appEl.click({ dataset: { action: 'resultsContinue' } });
 
 /* unstoppable: 14-day streak */

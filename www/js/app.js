@@ -77,6 +77,8 @@ Mates.screens = Object.assign(Mates.screens || {}, {
           '</div>' +
           '<button class="profile-delete" data-action="deleteProfile" data-id="' + p.id + '" aria-label="' +
             Mates.t('profiles.delete') + '">×</button>' +
+          '<button class="profile-gear" data-action="openProfileSettings" data-id="' + p.id + '" aria-label="' +
+            Mates.t('common.settings') + '">⚙</button>' +
         '</div>';
     });
     cards +=
@@ -100,6 +102,45 @@ Mates.screens = Object.assign(Mates.screens || {}, {
       '</header>' +
       '<h2 class="subtitle">' + Mates.t('profiles.title') + '</h2>' +
       empty + cards;
+  },
+
+  /** Per-profile goal editor for the timed challenge (⚙ on a profile card). */
+  profileSettings: function () {
+    const p = Mates.profiles.get(Mates.state.profileId);
+    if (!p) { Mates.router.go('profiles'); return ''; }
+    const d = Mates.profileData.get(p.id);
+
+    /** One +/− stepper row; buttons disable themselves at the limits. */
+    function stepperRow(field, labelKey, value, step) {
+      const atMin = Mates.timedGoal.clamp(field, value - step) === value;
+      const atMax = Mates.timedGoal.clamp(field, value + step) === value;
+      return '<div class="settings-row stepper-row">' +
+        '<div class="setting-label">' + Mates.t(labelKey) + '</div>' +
+        '<div class="stepper">' +
+          '<button class="stepper-btn" data-action="goalStep" data-field="' + field + '"' +
+            ' data-delta="-' + step + '"' + (atMin ? ' disabled' : '') + '>−</button>' +
+          '<span class="stepper-value">' + value + '</span>' +
+          '<button class="stepper-btn" data-action="goalStep" data-field="' + field + '"' +
+            ' data-delta="' + step + '"' + (atMax ? ' disabled' : '') + '>+</button>' +
+        '</div>' +
+      '</div>';
+    }
+
+    return '' +
+      '<header class="header">' +
+        '<button class="icon-btn" data-action="profileSettingsBack" aria-label="' +
+          Mates.t('common.back') + '">←</button>' +
+        '<h1 class="title">' + Mates.t('profileSettings.title') + '</h1>' +
+        '<span></span>' +
+      '</header>' +
+      '<div class="card settings-row">' +
+        Mates.avatar.render(p.avatar, 56) +
+        '<div class="setting-label">' + Mates.esc(p.name) + '</div>' +
+      '</div>' +
+      '<div class="card settings-group">' +
+        stepperRow('target', 'goal.target', d.timedGoal.target, 1) +
+        stepperRow('time', 'goal.time', d.timedGoal.time, 5) +
+      '</div>';
   },
 
   /** Home for the active profile: greeting, mode menu, stats, badges,
@@ -136,17 +177,17 @@ Mates.screens = Object.assign(Mates.screens || {}, {
         Mates.esc(Mates.t(b.nameKey)) + ' — ' + Mates.esc(Mates.t(b.descKey)) + '">' + b.icon + '</div>';
     });
 
-    /* High scores summary (only when there is something to show). */
-    const hsKeys = Object.keys(d.highScores);
+    /* Best challenge times (only when there is something to show). */
+    const bestKeys = Object.keys(d.timedBest);
     let highScores = '';
-    if (hsKeys.length) {
+    if (bestKeys.length) {
       let rows = '';
-      hsKeys.forEach(function (key) {
-        const parts = key.split('.'); // 'timed.<op>.<level>' or 'timed.mixed'
-        const label = key === 'timed.mixed'
+      bestKeys.forEach(function (key) {
+        const parts = key.split('.'); // '<op>.<level>' or 'mixed'
+        const label = key === 'mixed'
           ? '🔀 ' + Mates.t('timed.mixed')
-          : Mates.questions.SYMBOLS[parts[1]] + ' L' + parts[2];
-        rows += '<div class="hs-row"><span>' + label + '</span><span>' + d.highScores[key] + '</span></div>';
+          : Mates.questions.SYMBOLS[parts[0]] + ' L' + parts[1];
+        rows += '<div class="hs-row"><span>' + label + '</span><span>⏱ ' + d.timedBest[key] + ' s</span></div>';
       });
       highScores = '<div class="card settings-group">' +
         '<div class="setting-label">' + Mates.t('home.highScores') + '</div>' + rows + '</div>';
@@ -323,6 +364,28 @@ Mates.actions.deleteProfile = function (el) {
   if (!window.confirm(Mates.t('profiles.delete.confirm', { name: p.name }))) return;
   Mates.profiles.remove(p.id);
   if (Mates.state.profileId === p.id) Mates.state.profileId = null;
+  Mates.router.refresh();
+};
+
+/** Open the goal editor from a profile card's ⚙ button. */
+Mates.actions.openProfileSettings = function (el) {
+  if (!Mates.profiles.get(el.dataset.id)) return;
+  Mates.state.profileId = el.dataset.id;
+  Mates.router.go('profileSettings');
+};
+
+Mates.actions.profileSettingsBack = function () {
+  Mates.router.go('profiles');
+};
+
+/** Adjust the active profile's timed-challenge goal by a stepper delta. */
+Mates.actions.goalStep = function (el) {
+  const id = Mates.state.profileId;
+  if (!Mates.profiles.get(id)) return;
+  const field = el.dataset.field;
+  const d = Mates.profileData.get(id);
+  d.timedGoal[field] = Mates.timedGoal.clamp(field, d.timedGoal[field] + Number(el.dataset.delta));
+  Mates.profileData.save(id, d);
   Mates.router.refresh();
 };
 

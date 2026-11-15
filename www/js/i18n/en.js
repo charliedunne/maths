@@ -19,6 +19,10 @@ window.I18N.en = {
   'profiles.delete': 'Delete',
   'profiles.delete.confirm': 'Delete {name}? Their progress will be lost.',
 
+  'profileSettings.title': 'Challenge goal',
+  'goal.target': 'Correct answers needed',
+  'goal.time': 'Time limit (seconds)',
+
   'home.hello': 'Hi, {name}!',
   'home.switchUser': 'Switch profile',
   'home.points': 'Points',
@@ -35,7 +39,7 @@ window.I18N.en = {
   'badge.sharp-shooter.name': 'Sharp shooter',
   'badge.sharp-shooter.desc': 'Score 10/10 in level practice',
   'badge.speed-demon.name': 'Speed demon',
-  'badge.speed-demon.desc': 'Get 20+ correct in one timed challenge',
+  'badge.speed-demon.desc': 'Complete a level-5 challenge',
   'badge.table-master.name': 'Table master',
   'badge.table-master.desc': '50 correct multiplications',
   'badge.divvy-up.name': 'Divvy up',
@@ -52,6 +56,8 @@ window.I18N.en = {
   'home.mode.timed': 'Timed challenge',
   'timed.title': 'Timed challenge',
   'timed.mixed': 'Mixed',
+  'timed.goalLine': 'Goal: {n} correct in {t} s',
+  'timed.bestTime': 'Best time: {n} s',
 
   'level.title': 'Pick a level',
   'level.operation': 'Operation',
@@ -68,6 +74,12 @@ window.I18N.en = {
   'results.best': 'Best: {n}',
   'results.newBadges': 'New badges!',
   'results.continue': 'Continue',
+  'results.success': 'You did it!',
+  'results.successTime': 'in {n} s',
+  'results.fail': 'So close! You got {got} of {target}',
+  'results.retry': 'Try again',
+  'results.bonus': '+{n} bonus points',
+  'results.bestTime': 'Fastest: {n} s',
 
   'feedback.praise1': 'Great!',
   'feedback.praise2': 'Nice!',

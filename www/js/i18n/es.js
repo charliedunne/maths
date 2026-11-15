@@ -19,6 +19,10 @@ window.I18N.es = {
   'profiles.delete': 'Eliminar',
   'profiles.delete.confirm': '¿Eliminar {name}? Se perderá su progreso.',
 
+  'profileSettings.title': 'Objetivo del reto',
+  'goal.target': 'Aciertos necesarios',
+  'goal.time': 'Tiempo límite (segundos)',
+
   'home.hello': '¡Hola, {name}!',
   'home.switchUser': 'Cambiar de perfil',
   'home.points': 'Puntos',
@@ -35,7 +39,7 @@ window.I18N.es = {
   'badge.sharp-shooter.name': 'Puntería fina',
   'badge.sharp-shooter.desc': 'Consigue 10/10 en la práctica por niveles',
   'badge.speed-demon.name': 'Demonio de la velocidad',
-  'badge.speed-demon.desc': '20 o más aciertos en un reto contrarreloj',
+  'badge.speed-demon.desc': 'Completa un reto de nivel 5',
   'badge.table-master.name': 'Maestro de tablas',
   'badge.table-master.desc': '50 multiplicaciones correctas',
   'badge.divvy-up.name': 'Repartidor',
@@ -52,6 +56,8 @@ window.I18N.es = {
   'home.mode.timed': 'Reto contrarreloj',
   'timed.title': 'Reto contrarreloj',
   'timed.mixed': 'Mezcla',
+  'timed.goalLine': 'Objetivo: {n} aciertos en {t} s',
+  'timed.bestTime': 'Mejor tiempo: {n} s',
 
   'level.title': 'Elige un nivel',
   'level.operation': 'Operación',
@@ -68,6 +74,12 @@ window.I18N.es = {
   'results.best': 'Mejor: {n}',
   'results.newBadges': '¡Nuevas insignias!',
   'results.continue': 'Continuar',
+  'results.success': '¡Lo lograste!',
+  'results.successTime': 'en {n} s',
+  'results.fail': '¡Casi! Conseguiste {got} de {target}',
+  'results.retry': 'Intentar otra vez',
+  'results.bonus': '+{n} puntos extra',
+  'results.bestTime': 'Más rápido: {n} s',
 
   'feedback.praise1': '¡Genial!',
   'feedback.praise2': '¡Muy bien!',

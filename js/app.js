@@ -86,10 +86,12 @@ Mates.screens = Object.assign(Mates.screens || {}, {
       empty + cards;
   },
 
-  /** Home for the active profile: greeting + practice-mode menu. */
+  /** Home for the active profile: greeting, mode menu, stats, badges,
+   * high scores and leaderboard entry. */
   home: function () {
     const p = Mates.profiles.get(Mates.state.profileId);
     if (!p) { Mates.router.go('profiles'); return ''; }
+    const d = Mates.profileData.get(p.id);
 
     let modes = '';
     Object.keys(Mates.modes).forEach(function (key) {
@@ -97,6 +99,42 @@ Mates.screens = Object.assign(Mates.screens || {}, {
       modes += '<button class="btn btn-primary mode-card" data-action="' + key + 'Enter">' +
         m.icon + '  ' + Mates.t(m.nameKey) + '</button>';
     });
+
+    /* Stats: lifetime points, current streak, best streak. */
+    const stats = '' +
+      '<div class="stats-row">' +
+        '<div class="stat"><div class="stat-value">' + d.points + '</div>' +
+          '<div class="stat-label">' + Mates.t('home.points') + '</div></div>' +
+        '<div class="stat"><div class="stat-value">🔥 ' + d.currentStreak + '</div>' +
+          '<div class="stat-label">' + Mates.t('home.streak') + '</div></div>' +
+        '<div class="stat"><div class="stat-value">⭐ ' + d.bestStreak + '</div>' +
+          '<div class="stat-label">' + Mates.t('home.bestStreak') + '</div></div>' +
+      '</div>';
+
+    /* Badges: earned in full color, unearned dimmed. */
+    let badges = '';
+    Mates.badges.DEFS.forEach(function (b) {
+      const earned = d.badges.indexOf(b.id) !== -1;
+      badges += '<div class="badge-cell' + (earned ? ' earned' : ' locked') + '" aria-label="' +
+        Mates.esc(Mates.t(b.nameKey)) + '" title="' +
+        Mates.esc(Mates.t(b.nameKey)) + ' — ' + Mates.esc(Mates.t(b.descKey)) + '">' + b.icon + '</div>';
+    });
+
+    /* High scores summary (only when there is something to show). */
+    const hsKeys = Object.keys(d.highScores);
+    let highScores = '';
+    if (hsKeys.length) {
+      let rows = '';
+      hsKeys.forEach(function (key) {
+        const parts = key.split('.'); // 'timed.<op>.<level>' or 'timed.mixed'
+        const label = key === 'timed.mixed'
+          ? '🔀 ' + Mates.t('timed.mixed')
+          : Mates.questions.SYMBOLS[parts[1]] + ' L' + parts[2];
+        rows += '<div class="hs-row"><span>' + label + '</span><span>' + d.highScores[key] + '</span></div>';
+      });
+      highScores = '<div class="card settings-group">' +
+        '<div class="setting-label">' + Mates.t('home.highScores') + '</div>' + rows + '</div>';
+    }
 
     return '' +
       '<header class="header">' +
@@ -108,7 +146,41 @@ Mates.screens = Object.assign(Mates.screens || {}, {
       '</header>' +
       '<div class="card"><p class="home-hello">' +
         Mates.t('home.hello', { name: Mates.esc(p.name) }) + '</p></div>' +
-      modes;
+      modes +
+      '<div class="card">' + stats + '</div>' +
+      '<div class="card settings-group"><div class="setting-label">' +
+        Mates.t('home.badges') + '</div><div class="badges-grid">' + badges + '</div></div>' +
+      highScores +
+      '<button class="btn btn-ghost" data-action="openLeaderboard">🏆 ' +
+        Mates.t('home.leaderboard') + '</button>';
+  },
+
+  /** Local leaderboard: profiles on this device ranked by lifetime points. */
+  leaderboard: function () {
+    const rows = Mates.profiles.list()
+      .map(function (p) { return { p: p, d: Mates.profileData.get(p.id) }; })
+      .sort(function (a, b) { return b.d.points - a.d.points; });
+
+    let list = '';
+    rows.forEach(function (row, i) {
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
+      list += '<div class="lb-row">' +
+        '<span class="lb-rank">' + medal + '</span>' +
+        Mates.avatar.render(row.p.avatar, 40) +
+        '<span class="lb-name">' + Mates.esc(row.p.name) + '</span>' +
+        '<span class="lb-meta">🔥 ' + row.d.bestStreak + ' · 🎖 ' + row.d.badges.length + '</span>' +
+        '<span class="lb-points">' + row.d.points + '</span>' +
+      '</div>';
+    });
+
+    return '' +
+      '<header class="header">' +
+        '<button class="icon-btn" data-action="backToHome" aria-label="' +
+          Mates.t('common.back') + '">←</button>' +
+        '<h1 class="title">' + Mates.t('leaderboard.title') + '</h1>' +
+        '<span></span>' +
+      '</header>' +
+      '<div class="card lb-list">' + list + '</div>';
   },
 
   /** Avatar builder for a new profile. */
@@ -271,6 +343,10 @@ Mates.actions.builderSave = function () {
 
 Mates.actions.switchUser = function () {
   Mates.router.go('profiles');
+};
+
+Mates.actions.openLeaderboard = function () {
+  Mates.router.go('leaderboard');
 };
 
 Mates.actions.setLanguage = function (el) {

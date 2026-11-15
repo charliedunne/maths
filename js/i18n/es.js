@@ -18,6 +18,29 @@ window.I18N.es = {
 
   'home.hello': '¡Hola, {name}!',
   'home.switchUser': 'Cambiar de perfil',
+  'home.points': 'Puntos',
+  'home.streak': 'Racha',
+  'home.bestStreak': 'Mejor racha',
+  'home.badges': 'Insignias',
+  'home.highScores': 'Récords',
+  'home.leaderboard': 'Clasificación',
+
+  'leaderboard.title': 'Clasificación',
+
+  'badge.first-steps.name': 'Primeros pasos',
+  'badge.first-steps.desc': 'Completa tu primera ronda',
+  'badge.sharp-shooter.name': 'Puntería fina',
+  'badge.sharp-shooter.desc': 'Consigue 10/10 en la práctica por niveles',
+  'badge.speed-demon.name': 'Demonio de la velocidad',
+  'badge.speed-demon.desc': '20 o más aciertos en un reto contrarreloj',
+  'badge.table-master.name': 'Maestro de tablas',
+  'badge.table-master.desc': '50 multiplicaciones correctas',
+  'badge.divvy-up.name': 'Repartidor',
+  'badge.divvy-up.desc': '50 divisiones correctas',
+  'badge.on-fire.name': 'En llamas',
+  'badge.on-fire.desc': 'Practica 5 días seguidos',
+  'badge.unstoppable.name': 'Imparable',
+  'badge.unstoppable.desc': 'Practica 14 días seguidos',
   'home.mode.level': 'Práctica por niveles',
   'home.mode.adaptive': 'Práctica adaptativa',
 
@@ -40,6 +63,7 @@ window.I18N.es = {
   'results.answered': '{n} preguntas respondidas',
   'results.newRecord': '¡Nuevo récord!',
   'results.best': 'Mejor: {n}',
+  'results.newBadges': '¡Nuevas insignias!',
   'results.continue': 'Continuar',
 
   'feedback.praise1': '¡Genial!',

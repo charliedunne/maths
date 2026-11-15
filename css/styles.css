@@ -391,6 +391,79 @@ body {
 
 .home-hello { margin: 0; font-weight: 700; }
 
+/* ---------- Home stats ---------- */
+.stats-row { display: flex; gap: 12px; }
+
+.stat {
+  flex: 1;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  padding: 12px 8px;
+  text-align: center;
+}
+
+.stat-value { font-size: 1.35rem; font-weight: 800; }
+.stat-label { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); }
+
+/* ---------- Badges grid (home) ---------- */
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.badge-cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+
+.badge-cell.locked { opacity: 0.35; filter: grayscale(1); }
+
+/* ---------- High scores summary (home) ---------- */
+.hs-row {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+}
+
+/* ---------- Leaderboard ---------- */
+.lb-list { display: flex; flex-direction: column; gap: 14px; padding: 16px; }
+
+.lb-row { display: flex; align-items: center; gap: 12px; }
+
+.lb-rank { width: 38px; text-align: center; font-weight: 800; font-size: 1.1rem; }
+.lb-name {
+  flex: 1;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lb-meta { color: var(--text-muted); font-weight: 700; font-size: 0.9rem; }
+.lb-points { font-weight: 800; color: var(--accent); }
+
+/* ---------- New badges on results screen ---------- */
+.badges-earned {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.badge-earned {
+  background: var(--warning);
+  color: #4a3b2f;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+
 /* ---------- Round screen ---------- */
 .round-center { font-variant-numeric: tabular-nums; }
 

@@ -250,6 +250,14 @@ Mates.round = (function () {
           : '<p class="results-extra">' + Mates.t('results.best', { n: res.highScore.best }) + '</p>';
       }
     }
+    if (res.newBadges && res.newBadges.length) {
+      extra += '<p class="results-record">🎖 ' + Mates.t('results.newBadges') + '</p>' +
+        '<div class="badges-earned">' + res.newBadges.map(function (id) {
+          const b = Mates.badges.byId(id);
+          return '<span class="badge-earned" title="' + Mates.esc(Mates.t(b.descKey)) + '">' +
+            b.icon + ' ' + Mates.t(b.nameKey) + '</span>';
+        }).join('') + '</div>';
+    }
 
     const scoreLine = res.timed ? String(res.score) : res.score + ' / ' + res.count;
 

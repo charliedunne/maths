@@ -18,6 +18,29 @@ window.I18N.en = {
 
   'home.hello': 'Hi, {name}!',
   'home.switchUser': 'Switch profile',
+  'home.points': 'Points',
+  'home.streak': 'Streak',
+  'home.bestStreak': 'Best streak',
+  'home.badges': 'Badges',
+  'home.highScores': 'High scores',
+  'home.leaderboard': 'Leaderboard',
+
+  'leaderboard.title': 'Leaderboard',
+
+  'badge.first-steps.name': 'First steps',
+  'badge.first-steps.desc': 'Complete your first round',
+  'badge.sharp-shooter.name': 'Sharp shooter',
+  'badge.sharp-shooter.desc': 'Score 10/10 in level practice',
+  'badge.speed-demon.name': 'Speed demon',
+  'badge.speed-demon.desc': 'Get 20+ correct in one timed challenge',
+  'badge.table-master.name': 'Table master',
+  'badge.table-master.desc': '50 correct multiplications',
+  'badge.divvy-up.name': 'Divvy up',
+  'badge.divvy-up.desc': '50 correct divisions',
+  'badge.on-fire.name': 'On fire',
+  'badge.on-fire.desc': 'Practice 5 days in a row',
+  'badge.unstoppable.name': 'Unstoppable',
+  'badge.unstoppable.desc': 'Practice 14 days in a row',
   'home.mode.level': 'Level practice',
   'home.mode.adaptive': 'Adaptive practice',
 
@@ -40,6 +63,7 @@ window.I18N.en = {
   'results.answered': '{n} questions answered',
   'results.newRecord': 'New record!',
   'results.best': 'Best: {n}',
+  'results.newBadges': 'New badges!',
   'results.continue': 'Continue',
 
   'feedback.praise1': 'Great!',

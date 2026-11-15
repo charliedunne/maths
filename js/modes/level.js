@@ -76,13 +76,7 @@ Mates.actions.levelStart = function () {
   });
 };
 
-/* Record stats + points for a finished round. Streaks/badges land in Step 6. */
+/* Record the round (stats, points, streak, badges) via shared progress. */
 function recordRound(res) {
-  const id = Mates.state.profileId;
-  if (!id) return;
-  const d = Mates.profileData.get(id);
-  d.stats[res.op].answered += res.count;
-  d.stats[res.op].correct += res.score;
-  d.points += res.score * 10;
-  Mates.profileData.save(id, d);
+  res.newBadges = Mates.progress.record(res);
 }

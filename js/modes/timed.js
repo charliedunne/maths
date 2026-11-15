@@ -85,24 +85,19 @@ Mates.actions.timedStart = function () {
   });
 };
 
-/* Record points (+ per-op stats for single-operation rounds) and update
- * the high score. Attaches res.highScore = { best, isNew } for the
- * results screen. */
+/* Record the round (stats, points, streak, badges) via shared progress,
+ * then update the high score. Attaches res.highScore = { best, isNew }
+ * and res.newBadges for the results screen. */
 function recordTimedRound(res) {
+  const earned = Mates.progress.record(res);
   const id = Mates.state.profileId;
-  if (!id) return;
-  const d = Mates.profileData.get(id);
-
-  if (res.op !== 'mixed') {
-    d.stats[res.op].answered += res.count;
-    d.stats[res.op].correct += res.score;
+  if (id) {
+    const d = Mates.profileData.get(id);
+    const key = highScoreKey(res);
+    const prev = d.highScores[key] || 0;
+    res.highScore = { best: Math.max(prev, res.score), isNew: res.score > prev };
+    if (res.score > prev) d.highScores[key] = res.score;
+    Mates.profileData.save(id, d);
   }
-  d.points += res.score * 10;
-
-  const key = highScoreKey(res);
-  const prev = d.highScores[key] || 0;
-  res.highScore = { best: Math.max(prev, res.score), isNew: res.score > prev };
-  if (res.score > prev) d.highScores[key] = res.score;
-
-  Mates.profileData.save(id, d);
+  res.newBadges = earned;
 }

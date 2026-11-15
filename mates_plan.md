@@ -7,8 +7,8 @@
 4. When all boxes of a step are done: mark them `[x]`, update **Current status**, and `git commit` (user=charliedunne, email=charlie.dunne@gmail.com).
 
 ## Current status
-- Step in progress: **Step 6 — Gamification: points, streaks, badges, leaderboard**
-- Last updated: 2026-11-15 — Steps 1–5 complete (scaffold, i18n, themes, profiles, avatar builder, question generators, level/adaptive/timed modes; 90 smoke assertions pass)
+- Step in progress: **Step 7 — PWA**
+- Last updated: 2026-11-15 — Steps 1–6 complete (scaffold, i18n, themes, profiles, avatar builder, question generators, level/adaptive/timed modes, gamification; 114 smoke assertions pass)
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -157,16 +157,16 @@ boot → profile select → (avatar builder / create profile) → home menu [Lev
 - [x] Test: 60 s start, instant confirm, tick-by-tick countdown to end, new-record vs best-line paths, high-score persistence, mixed mode spans ops + `timed.mixed` record (all pass)
 - [x] `git commit`
 
-### Step 6 — Gamification: points, streaks, badges, leaderboard
-- [ ] Streak logic in storage/app: update currentStreak / bestStreak / lastPracticeDate after each round (handle day rollover and gaps)
-- [ ] `js/badges.js`: badge definitions (id, name key, description key, condition fn); `checkBadges(profileData)` returns newly earned badges
-- [ ] Implement all 7 badges from the table in section 2
-- [ ] Home screen for a profile: points, streak (current + best), badges grid (earned = colored, unearned = dimmed), high scores summary
-- [ ] Leaderboard screen: profiles on this device ranked by lifetime points, with best streak + badge count
-- [ ] Badge-unlock celebration shown on the results screen when earned
-- [ ] i18n for all badge names/descriptions (EN + ES complete)
-- [ ] Manual test: earn each badge deliberately; verify leaderboard ordering and streak math across simulated days
-- [ ] `git commit`
+### Step 6 — Gamification: points, streaks, badges, leaderboard ✅
+- [x] Streak logic in `js/badges.js` (`Mates.progress.updateStreak`): one round per calendar day keeps the streak alive; same-day rounds don't re-extend; next day after a gap restarts at 1; `bestStreak = max`. Uses local-calendar `dayKey('YYYY-MM-DD')`
+- [x] `js/badges.js`: badge DEFS (id, icon, name/desc i18n keys, condition fn) + `checkBadges(d, res)` returns newly earned ids; shared `Mates.progress.record(res)` funnels per-op stats, points (+score×10), streak and badges — all three mode record functions rewired through it
+- [x] All 7 badges implemented: first-steps, sharp-shooter (10/10 level round), speed-demon (≥20 timed), table-master (50 lifetime mul), divvy-up (50 lifetime div), on-fire (streak ≥5), unstoppable (streak ≥14)
+- [x] Home screen: stats row (points / current streak / best streak), badges grid (earned colored, locked dimmed + grayscale), high-scores summary card (hidden when empty), leaderboard button
+- [x] Leaderboard screen: device profiles ranked by lifetime points, medals for top 3, best streak + badge count per row
+- [x] Badge-unlock celebration on results screen ("New badges!" + earned badge chips); record fns attach `res.newBadges` (finish() calls onComplete before rendering)
+- [x] i18n for all badge names/descriptions + home/leaderboard strings (EN + ES complete)
+- [x] Test: streak rollover / gap-reset / same-day, all 7 badges earned deliberately across simulated days, celebration shows only newly earned, home stats + full/locked badge grids, fresh profile all locked, leaderboard ordering with new profile "Ana" (all pass; 114 assertions)
+- [x] `git commit`
 
 ### Step 7 — PWA
 - [ ] Cozy icon set in `icons/`: base SVG → PNG at 192, 512 + maskable variant (theme colors matching both palettes)

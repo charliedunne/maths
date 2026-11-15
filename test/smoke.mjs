@@ -13,6 +13,7 @@ const SCRIPTS = [
   'js/i18n.js',
   'js/avatar.js',
   'js/storage.js',
+  'js/badges.js',
   'js/questions.js',
   'js/round.js',
   'js/modes/level.js',
@@ -371,6 +372,115 @@ check('mixed round spans multiple operations', seenOps.size >= 2);
 for (let i = 0; i < 60; i++) page.ctx.Mates.round.tick();
 d6 = page.ctx.Mates.profileData.get(max.id);
 check('high score persisted for timed.mixed', d6.highScores['timed.mixed'] === 8);
+
+/* ---------- Step 6: gamification (still load 1, ES) ---------- */
+console.log('step 6 (gamification)');
+
+/** Play a full 10-question level round; first `correctOf` answers correct. Ends on results screen. */
+function levelRound(op, level, correctOf) {
+  page.appEl.click({ dataset: { action: 'levelEnter' } });
+  page.appEl.click({ dataset: { action: 'levelSetOp', op } });
+  page.appEl.click({ dataset: { action: 'levelSetLevel', value: String(level) } });
+  page.appEl.click({ dataset: { action: 'levelStart' } });
+  for (let i = 0; i < 10; i++) answer(i < correctOf);
+}
+
+const P = () => page.ctx.Mates.profileData.get(max.id);
+
+/* Earlier same-day rounds (steps 3–5) already started today's streak at 1. */
+check('streak is 1 from earlier same-day rounds', P().currentStreak === 1 && P().lastPracticeDate === page.ctx.Mates.progress.dayKey());
+
+/* Simulate: practiced yesterday with a 4-day streak; perfect round today -> streak 5 + badges */
+{
+  const d = P();
+  const yest = new Date(); yest.setDate(yest.getDate() - 1);
+  d.lastPracticeDate = page.ctx.Mates.progress.dayKey(yest);
+  d.currentStreak = 4; d.bestStreak = 4;
+  page.ctx.Mates.profileData.save(max.id, d);
+}
+levelRound('add', 1, 10);
+let d7 = P();
+check('streak extended across day rollover (5)', d7.currentStreak === 5 && d7.bestStreak === 5);
+check('first-steps earned', d7.badges.includes('first-steps'));
+check('sharp-shooter earned on 10/10', d7.badges.includes('sharp-shooter'));
+check('on-fire earned at 5-day streak', d7.badges.includes('on-fire'));
+check('first-steps + sharp-shooter already earned in step 3 round', d7.badges.includes('first-steps') && d7.badges.includes('sharp-shooter'));
+check('results celebrate only the new badge (ES)', page.appEl.innerHTML.includes('¡Nuevas insignias!') && page.appEl.innerHTML.includes('En llamas') && !page.appEl.innerHTML.includes('Puntería fina'));
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
+/* A 3-day gap resets the streak to 1; best streak is preserved */
+{
+  const d = P();
+  const old = new Date(); old.setDate(old.getDate() - 3);
+  d.lastPracticeDate = page.ctx.Mates.progress.dayKey(old);
+  d.currentStreak = 7;
+  page.ctx.Mates.profileData.save(max.id, d);
+}
+levelRound('sub', 1, 5);
+d7 = P();
+check('gap resets streak to 1', d7.currentStreak === 1);
+check('best streak preserved (5)', d7.bestStreak === 5);
+
+/* Same-day round does not extend the streak again */
+levelRound('add', 1, 0);
+d7 = P();
+check('same-day round does not extend streak', d7.currentStreak === 1);
+
+/* Lifetime badges: mul at 50+ correct, div just below, then crossed */
+{
+  const d = P();
+  d.stats.mul.correct = 50;
+  d.stats.div.correct = 49;
+  page.ctx.Mates.profileData.save(max.id, d);
+}
+levelRound('mul', 1, 3);
+d7 = P();
+check('table-master earned at 50+ mul correct', d7.badges.includes('table-master'));
+check('divvy-up not yet (49 div)', !d7.badges.includes('divvy-up'));
+levelRound('div', 1, 1);
+d7 = P();
+check('divvy-up earned at 50 div correct', d7.badges.includes('divvy-up'));
+
+/* speed-demon: 20 correct in one timed round */
+page.appEl.click({ dataset: { action: 'timedEnter' } });
+page.appEl.click({ dataset: { action: 'timedSetOp', op: 'mixed' } });
+page.appEl.click({ dataset: { action: 'timedStart' } });
+for (let i = 0; i < 20; i++) answer(true);
+for (let i = 0; i < 60; i++) page.ctx.Mates.round.tick();
+d7 = P();
+check('speed-demon earned at 20 timed correct', d7.badges.includes('speed-demon'));
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
+/* unstoppable: 14-day streak */
+{
+  const d = P();
+  d.currentStreak = 13;
+  const yest = new Date(); yest.setDate(yest.getDate() - 1);
+  d.lastPracticeDate = page.ctx.Mates.progress.dayKey(yest);
+  page.ctx.Mates.profileData.save(max.id, d);
+}
+levelRound('add', 1, 2);
+d7 = P();
+check('unstoppable earned at 14-day streak', d7.badges.includes('unstoppable') && d7.currentStreak === 14);
+
+/* Home shows stats, badges grid (earned + locked) and high scores */
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+check('home shows points label (ES)', page.appEl.innerHTML.includes('>Puntos<'));
+check('home badge grid: all 7 earned for Max', (page.appEl.innerHTML.match(/badge-cell earned/g) || []).length === 7 && !page.appEl.innerHTML.includes('badge-cell locked'));
+check('home shows high scores summary (ES)', page.appEl.innerHTML.includes('>Récords<'));
+
+/* Leaderboard: second profile, ranked by lifetime points */
+page.appEl.click({ dataset: { action: 'switchUser' } });
+page.appEl.click({ dataset: { action: 'addProfile' } });
+page.appEl.input('Ana');
+page.appEl.click({ dataset: { action: 'builderSave' } });
+check('home greets Ana', page.appEl.innerHTML.includes('¡Hola, Ana!'));
+check('fresh profile: all 7 badges locked', (page.appEl.innerHTML.match(/badge-cell locked/g) || []).length === 7 && !page.appEl.innerHTML.includes('badge-cell earned'));
+const maxPts = P().points;
+page.appEl.click({ dataset: { action: 'openLeaderboard' } });
+const lb = page.appEl.innerHTML;
+check('leaderboard ranks Max above Ana (ES title)', lb.includes('Clasificación</h1>') && lb.indexOf('>Max<') < lb.indexOf('>Ana<'));
+check('leaderboard shows Max points', lb.includes(String(maxPts)));
 
 /* ---------- Load 2: simulated reload, different browser lang ---------- */
 console.log('load 2 (reload, fr-FR browser — saved settings must win)');

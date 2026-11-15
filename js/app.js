@@ -10,6 +10,7 @@ Mates.state = {
   building: null,         // in-progress profile: { name, config }
   levelSel: null,         // level-mode selection: { op, level }
   adaptiveSel: null,      // adaptive-mode selection: { op }
+  timedSel: null,         // timed-mode selection: { op, level } (op may be 'mixed')
   lastResults: null       // finished round results (shown on results screen)
 };
 

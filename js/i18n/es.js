@@ -23,6 +23,10 @@ window.I18N.es = {
 
   'adaptive.title': 'Práctica adaptativa',
 
+  'home.mode.timed': 'Reto contrarreloj',
+  'timed.title': 'Reto contrarreloj',
+  'timed.mixed': 'Mezcla',
+
   'level.title': 'Elige un nivel',
   'level.operation': 'Operación',
   'level.level': 'Nivel',
@@ -33,6 +37,9 @@ window.I18N.es = {
   'results.title': '¡Ronda terminada!',
   'results.points': '+{n} puntos',
   'results.levelReached': 'Llegaste al nivel {n}',
+  'results.answered': '{n} preguntas respondidas',
+  'results.newRecord': '¡Nuevo récord!',
+  'results.best': 'Mejor: {n}',
   'results.continue': 'Continuar',
 
   'feedback.praise1': '¡Genial!',

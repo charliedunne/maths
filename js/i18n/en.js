@@ -23,6 +23,10 @@ window.I18N.en = {
 
   'adaptive.title': 'Adaptive practice',
 
+  'home.mode.timed': 'Timed challenge',
+  'timed.title': 'Timed challenge',
+  'timed.mixed': 'Mixed',
+
   'level.title': 'Pick a level',
   'level.operation': 'Operation',
   'level.level': 'Level',
@@ -33,6 +37,9 @@ window.I18N.en = {
   'results.title': 'Round complete!',
   'results.points': '+{n} points',
   'results.levelReached': 'You reached level {n}',
+  'results.answered': '{n} questions answered',
+  'results.newRecord': 'New record!',
+  'results.best': 'Best: {n}',
   'results.continue': 'Continue',
 
   'feedback.praise1': 'Great!',

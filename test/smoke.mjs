@@ -17,6 +17,7 @@ const SCRIPTS = [
   'js/round.js',
   'js/modes/level.js',
   'js/modes/adaptive.js',
+  'js/modes/timed.js',
   'js/app.js'
 ];
 
@@ -310,6 +311,66 @@ check('results show level reached 3 (ES)', page.appEl.innerHTML.includes('Llegas
 let d4 = page.ctx.Mates.profileData.get(max.id);
 check('reached level persisted per operation', d4.adaptiveLevel.add === 3);
 page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
+/* ---------- Step 5: timed challenge (still load 1, ES) ---------- */
+console.log('step 5 (timed challenge)');
+
+page.appEl.click({ dataset: { action: 'timedEnter' } });
+check('timed setup screen (ES)', page.appEl.innerHTML.includes('Reto contrarreloj</h1>'));
+page.appEl.click({ dataset: { action: 'timedSetOp', op: 'mul' } });
+page.appEl.click({ dataset: { action: 'timedSetLevel', value: '3' } });
+check('level picker visible for single operation', page.appEl.innerHTML.includes('data-action="timedSetLevel"'));
+page.appEl.click({ dataset: { action: 'timedStart' } });
+
+let t = page.ctx.Mates.round.peek();
+check('timed round starts at 60 s', t.timed && t.timeLeft === 60);
+check('countdown shown in round header', page.appEl.innerHTML.includes('⏱ 60'));
+check('score chip present in timed round', page.appEl.innerHTML.includes('score-chip'));
+
+answer(true); answer(true); answer(true);
+t = page.ctx.Mates.round.peek();
+check('instant confirm: score 3 without waiting', t.score === 3 && t.timeLeft === 60);
+answer(false);
+check('wrong answer keeps score at 3', page.ctx.Mates.round.peek().score === 3);
+
+for (let i = 0; i < 59; i++) page.ctx.Mates.round.tick();
+check('one second left before end', page.ctx.Mates.round.peek().timeLeft === 1);
+page.ctx.Mates.round.tick();
+check('timer end renders results with bare score', page.appEl.innerHTML.includes('results-score">3<'));
+check('new record celebration (ES)', page.appEl.innerHTML.includes('¡Nuevo récord!'));
+check('answered count shown (ES)', page.appEl.innerHTML.includes('4 preguntas respondidas'));
+check('timed points shown (+30, ES)', page.appEl.innerHTML.includes('+30 puntos'));
+let d6 = page.ctx.Mates.profileData.get(max.id);
+check('high score persisted for timed.mul.3', d6.highScores['timed.mul.3'] === 3);
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
+/* Second timed round, lower score: shows best, no new record */
+page.appEl.click({ dataset: { action: 'timedEnter' } });
+page.appEl.click({ dataset: { action: 'timedSetOp', op: 'mul' } });
+page.appEl.click({ dataset: { action: 'timedSetLevel', value: '3' } });
+page.appEl.click({ dataset: { action: 'timedStart' } });
+answer(true);
+for (let i = 0; i < 60; i++) page.ctx.Mates.round.tick();
+check('best shown instead of new record (ES)', page.appEl.innerHTML.includes('Mejor: 3') && !page.appEl.innerHTML.includes('¡Nuevo récord!'));
+d6 = page.ctx.Mates.profileData.get(max.id);
+check('high score unchanged after lower run', d6.highScores['timed.mul.3'] === 3);
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
+/* Mixed mode: no level picker, questions span operations */
+page.appEl.click({ dataset: { action: 'timedEnter' } });
+page.appEl.click({ dataset: { action: 'timedSetOp', op: 'mixed' } });
+check('level picker hidden for mixed', !page.appEl.innerHTML.includes('data-action="timedSetLevel"'));
+page.appEl.click({ dataset: { action: 'timedStart' } });
+
+const seenOps = new Set();
+for (let i = 0; i < 8; i++) {
+  seenOps.add(page.ctx.Mates.round.peek().question.op);
+  answer(true);
+}
+check('mixed round spans multiple operations', seenOps.size >= 2);
+for (let i = 0; i < 60; i++) page.ctx.Mates.round.tick();
+d6 = page.ctx.Mates.profileData.get(max.id);
+check('high score persisted for timed.mixed', d6.highScores['timed.mixed'] === 8);
 
 /* ---------- Load 2: simulated reload, different browser lang ---------- */
 console.log('load 2 (reload, fr-FR browser — saved settings must win)');

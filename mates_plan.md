@@ -7,8 +7,8 @@
 4. When all boxes of a step are done: mark them `[x]`, update **Current status**, and `git commit` (user=charliedunne, email=charlie.dunne@gmail.com).
 
 ## Current status
-- Step in progress: **Step 5 — Timed challenge**
-- Last updated: 2026-11-15 — Steps 1–4 complete (scaffold, i18n, themes, profiles, avatar builder, question generators, level mode, adaptive mode; 72 smoke assertions pass)
+- Step in progress: **Step 6 — Gamification: points, streaks, badges, leaderboard**
+- Last updated: 2026-11-15 — Steps 1–5 complete (scaffold, i18n, themes, profiles, avatar builder, question generators, level/adaptive/timed modes; 90 smoke assertions pass)
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -147,14 +147,15 @@ boot → profile select → (avatar builder / create profile) → home menu [Lev
 - [x] Test: default start at 2, step-up after exactly 3 correct, step-down after 2 wrong, clamp at 5, persistence across a simulated reload (all pass)
 - [x] `git commit`
 
-### Step 5 — Timed challenge
-- [ ] Timer engine: 60 s countdown display; instant confirm per answer, auto-advance; round ends at 0
-- [ ] Mode screen: operation + level, or "mixed" (all operations)
-- [ ] End screen: score, high-score comparison with "new record" celebration
-- [ ] Persist high scores per profile + mode key
-- [ ] i18n strings (EN + ES complete)
-- [ ] Manual test: timer accuracy, mixed mode, high-score persistence across reloads
-- [ ] `git commit`
+### Step 5 — Timed challenge ✅
+- [x] Timer engine (`js/round.js` timed path + `js/modes/timed.js`): 60 s countdown in header; instant confirm per answer, auto-advance (no lock); round ends at 0. Timed rounds generate questions on demand (no pre-generated list) so the count is effectively unlimited
+- [x] Mode screen: operation picker + level 1–5, or "mixed" (🔀, all four operations at fixed level 2; level row hidden). High-score keys: `timed.<op>.<level>` / `timed.mixed`
+- [x] End screen: bare score (no x/count), points, questions answered, "new record" 🏆 celebration or "Best: N" line
+- [x] Persist high scores per profile + mode key; mixed rounds award points but don't touch per-op stats (round engine only tracks a total score)
+- [x] `finish()` now calls `onComplete` before rendering results so record functions can attach display info (high scores) to the results object
+- [x] i18n strings (EN + ES complete)
+- [x] Test: 60 s start, instant confirm, tick-by-tick countdown to end, new-record vs best-line paths, high-score persistence, mixed mode spans ops + `timed.mixed` record (all pass)
+- [x] `git commit`
 
 ### Step 6 — Gamification: points, streaks, badges, leaderboard
 - [ ] Streak logic in storage/app: update currentStreak / bestStreak / lastPracticeDate after each round (handle day rollover and gaps)

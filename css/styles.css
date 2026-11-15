@@ -493,6 +493,13 @@ body {
   font-weight: 700;
 }
 
+.results-record {
+  margin: 8px 0 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--warning);
+}
+
 /* ---------- Utilities ---------- */
 .spacer { flex: 1; }
 .hidden { display: none !important; }

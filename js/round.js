@@ -15,13 +15,22 @@ Mates.round = (function () {
     return Mates.t('feedback.praise' + (i + 1));
   }
 
+  /** One random question at the given level; "mixed" picks a random operation. */
+  function generateFor(op, level) {
+    if (op === 'mixed') {
+      const ops = Mates.questions.OPS;
+      return Mates.questions.generate(ops[Math.floor(Math.random() * ops.length)], level);
+    }
+    return Mates.questions.generate(op, level);
+  }
+
   function currentQuestion() {
     if (r.questions) return r.questions[r.index];
-    // adaptive: generate on the fly at the current level, cached per index
+    // adaptive/timed: generate on the fly, cached per index
     if (!r.currentQ) {
       let q, guard = 0;
       do {
-        q = Mates.questions.generate(r.op, r.level);
+        q = generateFor(r.op, r.level);
       } while (keyOf(q) === r.lastKey && guard++ < 50);
       r.lastKey = keyOf(q);
       r.currentQ = q;
@@ -50,7 +59,10 @@ Mates.round = (function () {
       streakWrong: 0,
       timeLeft: cfg.timed ? 60 : 0,
       timerId: null,
-      questions: cfg.adaptive ? null : Mates.questions.generateRound(cfg.op, cfg.level, cfg.count),
+      // Timed rounds run until the clock hits 0: no fixed count, questions
+      // are generated on demand (also required for "mixed" operation).
+      count: cfg.timed ? Infinity : (cfg.count || 10),
+      questions: (cfg.adaptive || cfg.timed) ? null : Mates.questions.generateRound(cfg.op, cfg.level, cfg.count),
       currentQ: null,
       lastKey: null
     };
@@ -145,9 +157,11 @@ Mates.round = (function () {
     };
     if (r.timerId) clearInterval(r.timerId);
     r = null;
+    // Record before rendering so record functions can attach extra info
+    // (e.g. high scores) that the results screen displays.
+    if (onComplete) onComplete(results);
     Mates.state.lastResults = results;
     Mates.router.go('results');
-    if (onComplete) onComplete(results);
   }
 
   /** Quit the current round without recording. */
@@ -226,14 +240,24 @@ Mates.round = (function () {
 
     let extra = '';
     if (res.adaptive) {
-      extra = '<p class="results-extra">' + Mates.t('results.levelReached', { n: res.level }) + '</p>';
+      extra += '<p class="results-extra">' + Mates.t('results.levelReached', { n: res.level }) + '</p>';
     }
+    if (res.timed) {
+      extra += '<p class="results-extra">' + Mates.t('results.answered', { n: res.count }) + '</p>';
+      if (res.highScore) {
+        extra += res.highScore.isNew
+          ? '<p class="results-record">🏆 ' + Mates.t('results.newRecord') + '</p>'
+          : '<p class="results-extra">' + Mates.t('results.best', { n: res.highScore.best }) + '</p>';
+      }
+    }
+
+    const scoreLine = res.timed ? String(res.score) : res.score + ' / ' + res.count;
 
     return '' +
       '<header class="header"><span></span>' +
         '<h1 class="title">' + Mates.t('results.title') + '</h1><span></span></header>' +
       '<div class="card empty-state">' +
-        '<div class="results-score">' + res.score + ' / ' + res.count + '</div>' +
+        '<div class="results-score">' + scoreLine + '</div>' +
         '<p class="results-points">' + Mates.t('results.points', { n: res.score * 10 }) + '</p>' +
         extra +
       '</div>' +

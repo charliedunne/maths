@@ -17,13 +17,16 @@ Mates.round = (function () {
 
   function currentQuestion() {
     if (r.questions) return r.questions[r.index];
-    // adaptive: generate on the fly at the current level, no immediate repeat
-    let q, guard = 0;
-    do {
-      q = Mates.questions.generate(r.op, r.level);
-    } while (keyOf(q) === r.lastKey && guard++ < 50);
-    r.lastKey = keyOf(q);
-    return q;
+    // adaptive: generate on the fly at the current level, cached per index
+    if (!r.currentQ) {
+      let q, guard = 0;
+      do {
+        q = Mates.questions.generate(r.op, r.level);
+      } while (keyOf(q) === r.lastKey && guard++ < 50);
+      r.lastKey = keyOf(q);
+      r.currentQ = q;
+    }
+    return r.currentQ;
   }
 
   function keyOf(q) { return q.a + q.op + q.b; }
@@ -48,6 +51,7 @@ Mates.round = (function () {
       timeLeft: cfg.timed ? 60 : 0,
       timerId: null,
       questions: cfg.adaptive ? null : Mates.questions.generateRound(cfg.op, cfg.level, cfg.count),
+      currentQ: null,
       lastKey: null
     };
     if (r.timed) {
@@ -123,6 +127,7 @@ Mates.round = (function () {
     r.locked = false;
     r.input = '';
     r.feedback = null;
+    r.currentQ = null; // adaptive: next question is generated on demand
     r.index++;
     if (r.index >= r.count || (r.timed && r.timeLeft <= 0)) {
       finish();
@@ -178,6 +183,11 @@ Mates.round = (function () {
       ? '⏱ ' + s.timeLeft
       : (s.index + 1) + ' / ' + s.count;
 
+    /* Subtle current-level indicator, adaptive rounds only. */
+    const levelChip = s.adaptive
+      ? '<div class="level-chip">' + Mates.t('round.level', { n: s.level }) + '</div>'
+      : '';
+
     let keypad = '';
     ['1', '2', '3', '4', '5', '6', '7', '8', '9'].forEach(function (d) {
       keypad += '<button class="key" data-action="keypad" data-key="' + d + '">' + d + '</button>';
@@ -199,6 +209,7 @@ Mates.round = (function () {
       '</header>' +
 
       '<div class="card round-card">' +
+        levelChip +
         '<div class="round-question">' + s.question.a + ' ' + s.question.op + ' ' +
           s.question.b + ' = ?</div>' +
         '<div class="round-answer">' + (s.input || '&nbsp;') + '</div>' +

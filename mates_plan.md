@@ -7,8 +7,8 @@
 4. When all boxes of a step are done: mark them `[x]`, update **Current status**, and `git commit` (user=charliedunne, email=charlie.dunne@gmail.com).
 
 ## Current status
-- Step in progress: **Step 4 — Adaptive mode**
-- Last updated: 2026-11-15 — Steps 1–3 complete (scaffold, i18n, themes, profiles, avatar builder, question generators, level mode; 60 smoke assertions pass)
+- Step in progress: **Step 5 — Timed challenge**
+- Last updated: 2026-11-15 — Steps 1–4 complete (scaffold, i18n, themes, profiles, avatar builder, question generators, level mode, adaptive mode; 72 smoke assertions pass)
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -138,14 +138,14 @@ boot → profile select → (avatar builder / create profile) → home menu [Lev
 - [x] Test: 20 op×level generator invariants (60 samples each), round uniqueness, full 10/10 round with stats+points verification, wrong-answer feedback path, mid-round quit (all pass)
 - [x] `git commit`
 
-### Step 4 — Adaptive mode
-- [ ] Adaptive engine in `js/modes/adaptive.js`: start from saved level (default 2), up after 3 consecutive correct, down after 2 wrong, clamp 1–5
-- [ ] Mode screen: operation picker + start; subtle indicator of current level during the round
-- [ ] Same round/results flow as level mode; results show "level reached"
-- [ ] Persist reached level per operation in `adaptiveLevel`
-- [ ] i18n strings (EN + ES complete)
-- [ ] Manual test: verify step-up/step-down behavior and persistence across sessions
-- [ ] `git commit`
+### Step 4 — Adaptive mode ✅
+- [x] Adaptive engine (`js/modes/adaptive.js` + adaptive path in `js/round.js`): start from saved level (default 2), up after 3 consecutive correct, down after 2 wrong, clamp 1–5. Bug fixed while testing: adaptive questions are now cached per index (they were re-rolled on every render, so answers were graded against a different question)
+- [x] Mode screen: operation picker + start; subtle "Level N" chip in the round card during adaptive rounds
+- [x] Same round/results flow as level mode; results show "level reached"
+- [x] Persist reached level per operation in `adaptiveLevel`
+- [x] i18n strings (EN + ES complete)
+- [x] Test: default start at 2, step-up after exactly 3 correct, step-down after 2 wrong, clamp at 5, persistence across a simulated reload (all pass)
+- [x] `git commit`
 
 ### Step 5 — Timed challenge
 - [ ] Timer engine: 60 s countdown display; instant confirm per answer, auto-advance; round ends at 0

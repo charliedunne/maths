@@ -16,6 +16,7 @@ const SCRIPTS = [
   'js/questions.js',
   'js/round.js',
   'js/modes/level.js',
+  'js/modes/adaptive.js',
   'js/app.js'
 ];
 
@@ -273,12 +274,62 @@ check('advanced to question 2, score still 0', s4.index === 1 && s4.score === 0)
 page.appEl.click({ dataset: { action: 'roundQuit' } });
 check('quit returns to level setup', page.appEl.innerHTML.includes('Elige un nivel'));
 
+/* ---------- Step 4: adaptive mode (still load 1, ES) ---------- */
+console.log('step 4 (adaptive mode)');
+
+/** Answer the current question correctly or one-off; flushes the advance timer. */
+function answer(correct) {
+  const s = page.ctx.Mates.round.peek();
+  const val = correct ? s.question.answer : s.question.answer + 1;
+  String(val).split('').forEach(dg =>
+    page.appEl.click({ dataset: { action: 'keypad', key: dg } }));
+  page.appEl.click({ dataset: { action: 'keypad', key: 'enter' } });
+  page.flushTimers();
+}
+
+page.appEl.click({ dataset: { action: 'backToHome' } });
+check('home shows adaptive mode button', page.appEl.innerHTML.includes('data-action="adaptiveEnter"'));
+page.appEl.click({ dataset: { action: 'adaptiveEnter' } });
+check('adaptive setup screen (ES)', page.appEl.innerHTML.includes('Práctica adaptativa</h1>'));
+page.appEl.click({ dataset: { action: 'adaptiveSetOp', op: 'add' } });
+page.appEl.click({ dataset: { action: 'adaptiveStart' } });
+
+let a = page.ctx.Mates.round.peek();
+check('adaptive round starts at default level 2', a.adaptive && a.level === 2);
+check('level indicator shown in round UI', page.appEl.innerHTML.includes('Nivel 2'));
+
+answer(true); answer(true);
+check('still level 2 after only 2 correct', page.ctx.Mates.round.peek().level === 2);
+answer(true);
+check('stepped up to level 3 after 3 consecutive correct', page.ctx.Mates.round.peek().level === 3);
+answer(false); answer(false);
+check('stepped down to level 2 after 2 wrong', page.ctx.Mates.round.peek().level === 2);
+
+for (let i = 0; i < 5; i++) answer(true); // Q6–Q10 finish the round
+check('results show level reached 3 (ES)', page.appEl.innerHTML.includes('Llegaste al nivel 3'));
+let d4 = page.ctx.Mates.profileData.get(max.id);
+check('reached level persisted per operation', d4.adaptiveLevel.add === 3);
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
 /* ---------- Load 2: simulated reload, different browser lang ---------- */
 console.log('load 2 (reload, fr-FR browser — saved settings must win)');
 page = loadPage({ browserLang: 'fr-FR', systemDark: true });
 check('saved language es wins over browser', page.documentElement.lang === 'es');
 check('saved dark theme wins over system light pref path', page.documentElement.attrs['data-theme'] === 'dark');
 check('profiles screen in ES after reload', page.appEl.innerHTML.includes('¿Quién juega?'));
+
+/* Adaptive level must survive the reload and be used as start level. */
+const max2 = page.ctx.Mates.profiles.list().find(p => p.name === 'Max');
+page.appEl.click({ dataset: { action: 'selectProfile', id: max2.id } });
+page.appEl.click({ dataset: { action: 'adaptiveEnter' } });
+page.appEl.click({ dataset: { action: 'adaptiveStart' } }); // default op = add
+check('adaptive start level persists across sessions (3)', page.ctx.Mates.round.peek().level === 3);
+
+/* All-correct round from level 3: steps to 4, then 5, then clamps at 5. */
+for (let i = 0; i < 10; i++) answer(true);
+check('results show clamped level 5 (ES)', page.appEl.innerHTML.includes('Llegaste al nivel 5'));
+const d5 = page.ctx.Mates.profileData.get(max2.id);
+check('clamped level persisted', d5.adaptiveLevel.add === 5);
 
 /* ---------- Load 3: factory reset — Spanish browser, dark system ---------- */
 console.log('load 3 (fresh device, es-ES browser, dark system)');

@@ -9,6 +9,7 @@ Mates.state = {
   profileId: null,        // active profile id (null until one is selected)
   building: null,         // in-progress profile: { name, config }
   levelSel: null,         // level-mode selection: { op, level }
+  adaptiveSel: null,      // adaptive-mode selection: { op }
   lastResults: null       // finished round results (shown on results screen)
 };
 

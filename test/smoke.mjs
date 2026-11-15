@@ -2,7 +2,7 @@
  * Loads the app scripts in a vm context with a minimal fake DOM
  * and a shared localStorage stub, then simulates user clicks.
  * Run: node test/smoke.mjs */
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 
@@ -509,6 +509,26 @@ page = loadPage({ browserLang: 'es-ES', systemDark: true });
 check('language auto-detected as es', page.documentElement.lang === 'es');
 check('theme follows dark system pref', page.documentElement.attrs['data-theme'] === 'dark');
 check('profiles screen in ES', page.appEl.innerHTML.includes('¿Quién juega?'));
+
+/* ---------- Step 7: PWA files (static checks, no browser needed) ---------- */
+console.log('step 7 (pwa)');
+{
+  const manifest = JSON.parse(readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
+  check('manifest: name Mates + standalone', manifest.name === 'Mates' && manifest.display === 'standalone');
+  const iconPurposes = manifest.icons.map(i => i.sizes + ':' + i.purpose);
+  check('manifest: 192+512 any and maskable icons',
+    ['192x192:any', '512x512:any', '192x192:maskable', '512x512:maskable'].every(p => iconPurposes.includes(p)));
+
+  const swSrc = readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+  const arrBlock = swSrc.match(/const ASSETS = \[([\s\S]*?)\]/)[1];
+  const assets = [...arrBlock.matchAll(/'([^']+)'/g)].map(m => m[1].replace(/^\.\//, ''));
+  check('sw precaches a non-empty asset list', assets.length >= 20);
+  const missing = assets.filter(a => !existsSync(path.join(ROOT, a)));
+  check('sw precache list matches files on disk' + (missing.length ? ' (missing: ' + missing.join(', ') + ')' : ''), missing.length === 0);
+
+  const html = readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  check('index.html links manifest + theme-color', html.includes('rel="manifest"') && html.includes('name="theme-color"'));
+}
 
 console.log(failures === 0 ? '\nAll smoke tests passed.' : `\n${failures} test(s) FAILED.`);
 process.exit(failures === 0 ? 0 : 1);

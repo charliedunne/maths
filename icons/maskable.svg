@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Mates maskable icon: full-bleed background, content inside the
+       central 80% safe zone so OS masks never crop it. -->
+  <rect x="0" y="0" width="512" height="512" fill="#ef7d54"/>
+  <g transform="translate(64 64) scale(0.75)">
+    <path d="M 138 366 L 138 196 L 256 300 L 374 196 L 374 366"
+          fill="none" stroke="#fffdf9" stroke-width="58"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="398" cy="140" r="30" fill="#3aa6a0"/>
+  </g>
+</svg>

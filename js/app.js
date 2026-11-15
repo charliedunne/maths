@@ -392,3 +392,12 @@ if (document.readyState === 'loading') {
 } else {
   boot();
 }
+
+/* ---------- PWA: service worker registration ----------
+ * Only in secure contexts (https / localhost) so plain local dev
+ * never breaks; failures are swallowed silently. */
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}

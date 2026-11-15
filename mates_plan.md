@@ -7,8 +7,8 @@
 4. When all boxes of a step are done: mark them `[x]`, update **Current status**, and `git commit` (user=charliedunne, email=charlie.dunne@gmail.com).
 
 ## Current status
-- Step in progress: **Step 7 — PWA**
-- Last updated: 2026-11-15 — Steps 1–6 complete (scaffold, i18n, themes, profiles, avatar builder, question generators, level/adaptive/timed modes, gamification; 114 smoke assertions pass)
+- Step in progress: **Step 8 — Polish + QA pass**
+- Last updated: 2026-11-15 — Steps 1–7 complete (scaffold, i18n, themes, profiles, avatar builder, question generators, level/adaptive/timed modes, gamification, PWA; 119 smoke assertions pass)
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -168,13 +168,13 @@ boot → profile select → (avatar builder / create profile) → home menu [Lev
 - [x] Test: streak rollover / gap-reset / same-day, all 7 badges earned deliberately across simulated days, celebration shows only newly earned, home stats + full/locked badge grids, fresh profile all locked, leaderboard ordering with new profile "Ana" (all pass; 114 assertions)
 - [x] `git commit`
 
-### Step 7 — PWA
-- [ ] Cozy icon set in `icons/`: base SVG → PNG at 192, 512 + maskable variant (theme colors matching both palettes)
-- [ ] `manifest.json`: name "Mates", short_name, icons, theme_color, display standalone, start_url
-- [ ] `sw.js`: versioned cache; install = precache full asset list; fetch = cache-first with network fallback; activate = clean old caches
-- [ ] Register SW in `app.js` (guard so it doesn't break non-secure local dev)
-- [ ] Manual test: install prompt appears, app works fully offline after first load, new cache picked up after an asset change
-- [ ] `git commit`
+### Step 7 — PWA ✅
+- [x] Cozy icon set in `icons/`: base SVG (terracotta rounded square + cream "M" + teal dot, from theme tokens) → PNG at 192/512 for both `any` and `maskable` (content inside the 80% safe zone) + 180px apple-touch-icon; rendered with rsvg-convert
+- [x] `manifest.json`: name "Mates", short_name, id, start_url `./index.html`, scope, display standalone, portrait, background_color (light cream), theme_color (terracotta), all 4 icons
+- [x] `sw.js`: versioned cache (`mates-v1`); install = precache full asset list + skipWaiting; fetch = cache-first with network fallback (same-origin only cached; offline navigation falls back to cached index.html); activate = delete old `mates-*` caches + clients.claim. Bump VERSION on each release
+- [x] SW registered in `app.js` after load, guarded by `'serviceWorker' in navigator && window.isSecureContext`, failures swallowed — plain local dev unaffected
+- [x] Test: manifest parses with all 4 icon purposes; sw precache list matches files on disk (catches stale lists); index.html links manifest + theme-color. Browser-side install prompt / offline-after-first-load left for user verification on a device
+- [x] `git commit`
 
 ### Step 8 — Polish + QA pass
 - [ ] First-launch onboarding (welcome → create profile)

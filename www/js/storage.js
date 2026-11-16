@@ -81,10 +81,19 @@ Mates.applyTheme = function () {
 /* ---------- Profiles ---------- */
 const PROFILES_KEY = 'mates.profiles';
 
+/** Merge a stored avatar config with defaults (new slots default to 0). */
+function mergeAvatar(saved) {
+  return Object.assign({}, Mates.avatar.DEFAULT, saved || {});
+}
+
 Mates.profiles = {
-  /** All profiles on this device, oldest first. */
+  /** All profiles on this device, oldest first. Avatars are merged
+   *  with defaults at read time so old profiles gain new slots. */
   list: function () {
-    return Mates.storage.get(PROFILES_KEY, []);
+    return Mates.storage.get(PROFILES_KEY, []).map(function (p) {
+      p.avatar = mergeAvatar(p.avatar);
+      return p;
+    });
   },
 
   get: function (id) {

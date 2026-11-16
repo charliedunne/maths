@@ -7,8 +7,8 @@
 4. When all boxes of a step are done: mark them `[x]`, update **Current status**, and `git commit` (user=charliedunne, email=charlie.dunne@gmail.com).
 
 ## Current status
-- Step in progress: **none** — all steps complete except Step 9 box 5 (debug APK build, blocked on this machine)
-- Last updated: 2026-11-16 — Steps 1–8 + 10 + 11 + 12 + 13 complete. **Step 11 (Bomb Race) is merged into `main` as PR #1** (`origin/main` = `27414af`). **Steps 12–13 (Approximation / rounding)** on branch `approximation`: new 5th operation `round` (symbol `≈`, whole numbers only, targets ten/hundred/thousand) in Level, Adaptive and Timed/mixed modes, plus a second bomb race — the **Approximation Bomb Race** ("Bomba de Redondeo"): 10 progressive rounding quests sharing the per-profile `bombTime`. The original race is now named "Multiplication Bomb Race" / "Bomba de Multiplicaciones". 265 smoke assertions pass. Branch pushed and opened as **PR #2** (awaiting merge). Remaining: merge PR #2 when approved; build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5).
+- All planned steps done on branch `cosmetic-improvement` (off `main` = `601bd05`). Nothing in progress.
+- Last updated: 2026-11-16 — Steps 1–8 + 10–13 merged into `main`. On branch `cosmetic-improvement`: **Step 14 (cozy pastel refresh)** — cream-pink/peach/lavender/mint light palette, deep plum-navy dark palette, rounded type, layered dot+glow background, pill gradient buttons with press-squash, top-light cards, 3D keypad, sparkle/badge/hover micro-animations, full pastel icon set re-rendered (PWA + Android adaptive). **Step 15 (avatar variability)** — new slots glasses/hat/hairpin/earrings/freckles, hair 6→10 styles, skin 6→8, hairColor 7→10, read-time avatar merge for old profiles, five new builder rows, EN/ES labels, SW `mates-v8`. 275 smoke assertions pass. Remaining: build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5); branch not yet pushed/PR'd.
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -284,7 +284,29 @@ Notes (Step 9):
 - [x] Bug fixed while testing: top-level `function` declarations in classic scripts are global bindings — bomb-round.js's first helpers `race()`/`nodeState()` shadowed bomb.js's same-named ones, so the multiplication map rendered from `.bombRound` state. Renamed to `roundRace()` / `roundNodeState()` (see Corrections)
 - [x] Test: smoke.mjs step 13 — quest L1 = values 1–9 → ten (one repeat allowed), shared bombTime honored, failure unlocks the next quest, +50 first-clear bonus only, stats.round fed by the race. 265 assertions pass
 - [x] SW cache bumped to `mates-v6`
-- [x] `git commit` (branch `approximation`; pushed — PR #2, awaiting merge)
+- [x] `git commit` (branch `approximation`; pushed — PR #2, merged into `main`)
+
+### Step 14 — Cozy pastel refresh (aesthetics + icons)
+- [x] Palette: light = cream-pink base with peach / lavender / mint accents; dark = deep plum-navy with warm rose & soft gold accents (no pure black/white). Primary buttons use a peach→rose gradient (`--primary-hi` → `--primary`) so the peach accent stays in play while white text keeps its contrast anchor on the rose half
+- [x] Typography: rounded system font stack (`ui-rounded` first), slightly larger base size (18→19px) — no webfonts, stays offline
+- [x] Backgrounds: soft radial gradient + faint dot/sparkle pattern instead of flat color (`--bg-glow` + `--dot` tokens, fixed attachment)
+- [x] Components: pill buttons with soft gradients + press-squash animation; cards 18px+ radius with top-light gradient (`--surface-hi` → `--surface`); keypad keys with 3D press effect (hard `--key-edge` bottom shadow that compresses on `:active`)
+- [x] Micro-animations: sparkle burst + bounce on correct answers (pure CSS on re-rendered `.fb-ok`), badge pop-in (springy overshoot on `.badge-earned`), mode-card hover lift, smooth screen transitions (eased cubic-bezier)
+- [x] Icon refresh: new pastel icon SVG (pink `#f6b8d4` + cream M + lavender dot + sparkle) → PWA PNGs (192/512 any+maskable, 180 apple-touch) + all Android adaptive icons re-rendered; manifest colors (`#fdf0f5` / `#e96b9f`) + `ic_launcher_background.xml` (`#f6b8d4`) updated; welcome-screen brand SVG in app.js recolored to match
+- [x] Full dark-theme pass: contrast + avatar legibility on every screen (tokens only — no hardcoded colors remain outside the two theme-independent pairs and the brand SVG)
+- [x] Test: smoke suite stays green (265/265); icon pipeline outputs verified pixel-by-pixel (colors, transparency, safe-zone placement)
+- [x] SW cache bumped to `mates-v7`
+- [x] `git commit`
+
+### Step 15 — Avatar variability expansion
+- [x] New avatar slots + SVG parts: `glasses` (none · round · heart sunglasses · cat-eye · star shades), `hat` (none · beanie · party hat · beret · princess crown), `hairpin` (none · bow · flower crown · butterfly clip · star clip), `earrings` (none · hoops · hearts), `freckles` (none · freckles)
+- [x] Hair: + ponytail, space buns, braids, wavy long → 10 styles; skin 6→8 tones; hairColor 7→10 (+ lilac, mint, orange; existing grey serves as silver/platinum)
+- [x] Storage: read-time merge for old profiles (new slots default 0) — same pattern as `bombRound`
+- [x] Builder UI: five new option rows with live mini-avatar thumbnails; "Surprise me" randomizes the new parts too
+- [x] i18n EN + ES for all new part labels
+- [x] Test: SVG bounds across all new parts × combos (incl. hat-over-hair layering), builder flow with the new rows, old-profile merge regression — 275 assertions pass
+- [x] SW cache bumped to `mates-v8`
+- [x] `git commit`
 
 ---
 

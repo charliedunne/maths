@@ -2,7 +2,7 @@
  * network fallback. Bump VERSION on every release: old caches are
  * deleted on activate so the app always picks up new assets. */
 
-const VERSION = 'mates-v6';
+const VERSION = 'mates-v8';
 const ASSETS = [
   './',
   'index.html',

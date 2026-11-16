@@ -111,6 +111,11 @@ window.I18N.en = {
   'builder.hairColor': 'Hair color',
   'builder.eyes': 'Eyes',
   'builder.mouth': 'Mouth',
+  'builder.glasses': 'Glasses',
+  'builder.hat': 'Hat',
+  'builder.hairpin': 'Hair accessory',
+  'builder.earrings': 'Earrings',
+  'builder.freckles': 'Freckles',
   'builder.surprise': 'Surprise me',
   'builder.save': 'Start playing',
 

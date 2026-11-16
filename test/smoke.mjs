@@ -122,6 +122,8 @@ check('builder shows accessory rows',
   page.appEl.innerHTML.includes('>Glasses<') && page.appEl.innerHTML.includes('>Hat<') &&
   page.appEl.innerHTML.includes('>Hair accessory<') && page.appEl.innerHTML.includes('>Earrings<') &&
   page.appEl.innerHTML.includes('>Freckles<'));
+check('builder shows skin + eye color rows',
+  page.appEl.innerHTML.includes('>Skin color<') && page.appEl.innerHTML.includes('>Eye color<'));
 page.appEl.click({ dataset: { action: 'builderSurprise' } });
 page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hair', value: '3' } });
 page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hairColor', value: '6' } });
@@ -130,6 +132,8 @@ page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hat', value: '2' 
 page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hairpin', value: '1' } });
 page.appEl.click({ dataset: { action: 'builderSetPart', part: 'earrings', value: '2' } });
 page.appEl.click({ dataset: { action: 'builderSetPart', part: 'freckles', value: '1' } });
+page.appEl.click({ dataset: { action: 'builderSetPart', part: 'skin', value: '5' } });
+page.appEl.click({ dataset: { action: 'builderSetPart', part: 'eyeColor', value: '2' } });
 page.appEl.input('Luna');
 page.appEl.click({ dataset: { action: 'builderSave' } });
 check('home screen greets Luna (EN)', page.appEl.innerHTML.includes('Hi, Luna!'));
@@ -141,6 +145,7 @@ check('accessory slots persisted',
   profiles[0].avatar.glasses === 4 && profiles[0].avatar.hat === 2 &&
   profiles[0].avatar.hairpin === 1 && profiles[0].avatar.earrings === 2 &&
   profiles[0].avatar.freckles === 1);
+check('skin + eye color persisted', profiles[0].avatar.skin === 5 && profiles[0].avatar.eyeColor === 2);
 check('profile data initialized', page.ctx.Mates.profileData.get(profiles[0].id).points === 0);
 
 /* Settings dance from the profiles screen */
@@ -184,7 +189,7 @@ check('renderAvatar sizes', av.render(av.DEFAULT, 160).includes('width="160"'));
 check('random config in bounds', (() => {
   const r = av.random();
   return r.face < 3 && r.skin < 8 && r.hair < 10 && r.hairColor < 10 &&
-    r.eyes < 3 && r.mouth < 3 && r.glasses < 5 && r.hat < 5 &&
+    r.eyes < 3 && r.eyeColor < 5 && r.mouth < 3 && r.glasses < 5 && r.hat < 5 &&
     r.hairpin < 5 && r.earrings < 3 && r.freckles < 2;
 })());
 
@@ -237,7 +242,7 @@ console.log('step 15 (avatar parts, bounds, layering, legacy merge)');
   for (let i = 0; i < 200 && rndOk; i++) {
     const r = A.random();
     if (r.face > 2 || r.skin > 7 || r.hair > 9 || r.hairColor > 9 ||
-        r.eyes > 2 || r.mouth > 2 || r.glasses > 4 || r.hat > 4 ||
+        r.eyes > 2 || r.eyeColor > 4 || r.mouth > 2 || r.glasses > 4 || r.hat > 4 ||
         r.hairpin > 4 || r.earrings > 2 || r.freckles > 1) rndOk = false;
   }
   check('random() in expanded bounds (200 draws)', rndOk);
@@ -256,6 +261,37 @@ console.log('step 15 (avatar parts, bounds, layering, legacy merge)');
   check('legacy avatar renders in bounds', inBounds(A.render(merged, 100)));
   if (savedProfiles !== undefined) store.set('mates.profiles', savedProfiles);
   else store.delete('mates.profiles');
+}
+
+/* ---------- Step 17: skin + eye color selection ---------- */
+console.log('step 17 (skin tones, eye colors)');
+{
+  const A = page.ctx.Mates.avatar;
+  check('EYE_COLORS exported (5 shades)', Array.isArray(A.EYE_COLORS) && A.EYE_COLORS.length === 5);
+  check('SKINS exported (8 tones)', Array.isArray(A.SKINS) && A.SKINS.length === 8);
+
+  /* Every eye color renders in all three eye styles, and the chosen
+   * hex actually appears in the SVG. */
+  let eyesOk = true;
+  for (let ec = 0; ec < 5 && eyesOk; ec++) {
+    const hex = A.EYE_COLORS[ec];
+    for (let style = 0; style < 3 && eyesOk; style++) {
+      const svg = A.render({ face: 0, skin: 1, hair: 0, hairColor: 1, eyes: style, eyeColor: ec }, 100);
+      if (!svg.includes(hex)) eyesOk = false;
+    }
+  }
+  check('all 5 eye colors render in all 3 styles', eyesOk);
+
+  /* Legacy config without eyeColor falls back to the default dark shade. */
+  const legacySvg = A.render({ face: 0, skin: 1, hair: 1, hairColor: 1, eyes: 2 }, 100);
+  check('missing eyeColor falls back to default', legacySvg.includes(A.EYE_COLORS[0]));
+
+  /* Skin swatches: every tone appears in the face of a rendered avatar. */
+  let skinOk = true;
+  for (let s = 0; s < A.SKINS.length && skinOk; s++) {
+    if (!A.render({ face: 0, skin: s, hair: 0, hairColor: 1, eyes: 0 }, 100).includes(A.SKINS[s])) skinOk = false;
+  }
+  check('all 8 skin tones render', skinOk);
 }
 
 /* Profiles screen: Luna card (created during onboarding) + add card */
@@ -907,7 +943,7 @@ console.log('step 8 (i18n parity)');
     const src = readFileSync(path.join(WEB, f), 'utf8');
     for (const m of src.matchAll(/(?:nameKey|descKey):\s*'([^']+)'/g)) used.add(m[1]);
   }
-  for (const m of readFileSync(path.join(WEB, 'js/app.js'), 'utf8').matchAll(/partRow\('[^']+',\s*'([^']+)'/g)) {
+  for (const m of readFileSync(path.join(WEB, 'js/app.js'), 'utf8').matchAll(/(?:partRow|swatchRow)\('[^']+',\s*'([^']+)'/g)) {
     used.add(m[1]);
   }
 

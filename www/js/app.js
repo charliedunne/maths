@@ -268,13 +268,18 @@ Mates.screens = Object.assign(Mates.screens || {}, {
         '<div class="option-options">' + opts + '</div></div>';
     };
 
-    /* Hair color: plain swatches. */
-    let swatches = '';
-    Mates.avatar.HAIR_COLORS.forEach(function (color, i) {
-      swatches += '<button class="swatch' + (b.config.hairColor === i ? ' active' : '') + '"' +
-        ' data-action="builderSetPart" data-part="hairColor" data-value="' + i + '"' +
-        ' style="background:' + color + '" aria-label="' + Mates.t('builder.hairColor') + ' ' + (i + 1) + '"></button>';
-    });
+    /* Color swatches for skin, hair and eye color. */
+    const swatchRow = function (part, labelKey, colors) {
+      let s = '';
+      colors.forEach(function (color, i) {
+        s += '<button class="swatch' + (b.config[part] === i ? ' active' : '') + '"' +
+          ' data-action="builderSetPart" data-part="' + part + '" data-value="' + i + '"' +
+          ' style="background:' + color + '" aria-label="' + Mates.t(labelKey) + ' ' + (i + 1) + '"></button>';
+      });
+      return '<div class="option-row">' +
+        '<div class="setting-label">' + Mates.t(labelKey) + '</div>' +
+        '<div class="option-options">' + s + '</div></div>';
+    };
 
     return '' +
       '<header class="header">' +
@@ -294,12 +299,11 @@ Mates.screens = Object.assign(Mates.screens || {}, {
       '</div>' +
 
       partRow('face', 'builder.face', 3) +
+      swatchRow('skin', 'builder.skin', Mates.avatar.SKINS) +
       partRow('hair', 'builder.hair', 10) +
-      '<div class="option-row">' +
-        '<div class="setting-label">' + Mates.t('builder.hairColor') + '</div>' +
-        '<div class="option-options">' + swatches + '</div>' +
-      '</div>' +
+      swatchRow('hairColor', 'builder.hairColor', Mates.avatar.HAIR_COLORS) +
       partRow('eyes', 'builder.eyes', 3) +
+      swatchRow('eyeColor', 'builder.eyeColor', Mates.avatar.EYE_COLORS) +
       partRow('mouth', 'builder.mouth', 3) +
       partRow('glasses', 'builder.glasses', 5) +
       partRow('hat', 'builder.hat', 5) +

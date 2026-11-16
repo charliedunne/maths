@@ -7,20 +7,22 @@
 4. When all boxes of a step are done: mark them `[x]`, update **Current status**, and `git commit` (user=charliedunne, email=charlie.dunne@gmail.com).
 
 ## Current status
-- Step in progress: **Step 9 — Capacitor → Android APK** (only box 5 left: debug APK build, blocked on this machine)
-- Last updated: 2026-11-15 — Steps 1–8 + 10 complete; **Step 11 (Bomb Race / "Camino de la bomba") complete** on branch `bomb-race`: 20-quest winding map (two per table, ordered then shuffled), one countdown per quest (per-profile `bombTime`, default 60 s, editable 20–300 s via a third ⚙ stepper row), sequential unlock (attempt = pass or fail), +50 first-clear bonus only, 💣/💥 banners. 201 smoke assertions pass. Remaining: push `bomb-race` when asked; build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5).
+- Step in progress: **none** — all steps complete except Step 9 box 5 (debug APK build, blocked on this machine)
+- Last updated: 2026-11-16 — Steps 1–8 + 10 + 11 + 12 + 13 complete. **Step 11 (Bomb Race) is merged into `main` as PR #1** (`origin/main` = `27414af`). **Steps 12–13 (Approximation / rounding)** on branch `approximation`: new 5th operation `round` (symbol `≈`, whole numbers only, targets ten/hundred/thousand) in Level, Adaptive and Timed/mixed modes, plus a second bomb race — the **Approximation Bomb Race** ("Bomba de Redondeo"): 10 progressive rounding quests sharing the per-profile `bombTime`. The original race is now named "Multiplication Bomb Race" / "Bomba de Multiplicaciones". 265 smoke assertions pass. Branch pushed and opened as **PR #2** (awaiting merge). Remaining: merge PR #2 when approved; build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5).
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
 - **Shared round engine**: added `js/round.js` (not in the original layout) — one round engine + round/results screens shared by level, adaptive and timed modes. Modes register in `Mates.modes` (home renders them) and pass a cfg to `Mates.round.start()`. Load order: questions → round → modes → app; all files merge into `Mates.screens`/`Mates.actions` instead of overwriting.
 - **Testing**: no browser available in the dev environment — verification uses `test/smoke.mjs` (Node vm + fake DOM + shared localStorage stub, controllable setTimeout/setInterval), run with `node test/smoke.mjs`. Visual/real-device checks are left to the user.
 - **webDir = `www/`** (user-approved): Capacitor 8 rejects `webDir: "."` (`checkWebDir` in `@capacitor/cli` bans `''`, `'.'`, `'..'`, `'../'`, `'./'`), so all web assets moved into `www/` (index.html, js/, css/, icons/, manifest.json, sw.js) and `webDir: "www"`. Side benefit: server deployment is just "serve `www/`". Smoke harness reads app files from `WEB = ROOT/www`.
+- **Rounding targets (user-approved, Step 12)**: the original request said "to the unit, ten or cent.", but rounding whole numbers to the unit is a no-op without decimals — so unit rounding was dropped and the targets are ten/hundred/thousand. Flagged to the user before implementation; approved as-is.
 - **In-place round updates (flicker fix)**: the round screen is fully rendered only once on entry (`router.go('round')`). Every later update patches existing nodes in place — `patchTimer()` (clock), `patchAnswer()` (digit/backspace presses) and `patchRound()` (after submit/advance: counter/clock, score chip, level chip, question, answer, feedback) targeting IDs `#roundTimer`, `#roundScore`, `#roundLevelChip`, `#roundQuestion`, `#roundAnswer`, `#roundFeedback`. A full innerHTML swap per tick or keypress replaced all DOM nodes and made the screen visibly blink. Regression: smoke.mjs wraps a full 10-question level round and the timed tick/keypad loops in a `router.refresh` spy — exactly one re-render (results navigation) and zero respectively.
+- **Global name collisions across classic scripts**: top-level `function` declarations in classic (non-module) scripts are *global* bindings, not file-local. When `js/modes/bomb-round.js` (loaded after `bomb.js`) first declared same-named helpers (`race()`, `nodeState()`), every bare reference in the app — including bomb.js's own map render — resolved to the *last* definition, so the multiplication map rendered from `.bombRound` state. Fixed by renaming the new file's helpers to `roundRace()` / `roundNodeState()` (plus a comment in the file warning about cross-file name uniqueness). Lesson: top-level function names are one global namespace across all mode scripts — keep them feature-prefixed (`startBombQuest` vs `startBombRoundQuest`).
 
 ---
 
 ## 1. Spec summary
-Web app for primary-school maths practice (ages 5–11). **Arithmetic only**: addition, subtraction, multiplication, division. Four practice modes: fixed levels, adaptive difficulty, goal-based timed challenges, and Bomb Race. Installable PWA, fully offline, no backend — named local profiles in `localStorage`. Bilingual **EN/ES**, user-selectable **light/dark** cozy themes, layered-SVG **avatar builder** (face, skin, hair, hair color, eyes, mouth). Gamification: points, daily streaks, badges, local leaderboard between profiles on the same device. Later: Android APK via Capacitor.
+Web app for primary-school maths practice (ages 5–11). **Arithmetic only**: addition, subtraction, multiplication, division and rounding (approximation). Five practice modes: fixed levels, adaptive difficulty, goal-based timed challenges, Multiplication Bomb Race, and Approximation Bomb Race. Installable PWA, fully offline, no backend — named local profiles in `localStorage`. Bilingual **EN/ES**, user-selectable **light/dark** cozy themes, layered-SVG **avatar builder** (face, skin, hair, hair color, eyes, mouth). Gamification: points, daily streaks, badges, local leaderboard between profiles on the same device. Later: Android APK via Capacitor.
 
 ## 2. Key decisions & conventions (read before coding)
 - **Stack**: vanilla JS + HTML/CSS only. No build step, no dependencies, no framework.
@@ -47,8 +49,24 @@ Start at the profile's saved level for that operation (default 2). Step **up** a
 ### Timed challenge (goal-based, Step 10)
 Reach **N correct within T seconds**. N and T are a per-profile goal (`timedGoal: { target, time }`, default 8 / 45 s), editable on the `profileSettings` screen via +/− steppers (⚙ button on each profile card; steps ±1 target / ±5 s time; limits target 1–30, time 10–300 s). Pick operation + level, or "mixed" (all four operations at fixed level 2) — the goal applies to all. Instant confirm per answer, auto-advance — no delay, so a quick ✓/✗ pop (`#roundFlash`, 500 ms CSS animation on the round card) is the visual right/wrong indication alongside the sound. Wrong answers have no penalty. The round ends early when the target is reached (success → 🎉 banner + elapsed time + fastest-time record; failure at 0 s below target → encouraging message + Try again). Points = score × 10, plus a +20 success bonus. Best time per key (`timedBest`, seconds, lower is better, success only) replaces the old count-based high scores — obsolete `timed.*` keys are stripped by a read-time migration in `profileData.get()`.
 
-### Bomb Race ("Camino de la bomba", Step 11)
+### Multiplication Bomb Race (Step 11)
 A winding map of **20 quests** — two per multiplication table (1–10), in a fixed sequence: for table `t`, quest `2t−1` runs the ordered pairs `t×1…t×10` and quest `2t` runs the same ten pairs shuffled (Fisher-Yates). Each quest is one round of those ten questions with a single countdown for the whole quest (`bombTime`, per profile, default 60 s; editable on `profileSettings` via a third stepper row, ±5 s, clamped 20–300 s). Success = all 10 answered before the clock hits 0 (wrong answers allowed, score shown); failure = timeout → 💥 banner. Sequential unlock: attempting quest N — pass **or** fail — unlocks N+1; every unlocked quest stays tappable for retry/replay; the map highlights "next mission" = first unlocked-not-completed node (pulsing). Rewards: usual 10 pts/correct + **+50 flat bonus on first completion only** (replays earn no bonus); no fastest-time records, no new badge. Map layout: boustrophedon 4×5 grid with dashed links; node states done ✓ / next (pulse) / failed 💥 / locked 🔒 (disabled).
+
+### Approximation (rounding, Step 12)
+A **5th operation** `round` alongside add/sub/mul/div, symbol **`≈`**. Whole numbers only (unit rounding dropped — impossible without decimals). Question shape: `{ value, target: 'ten'|'hundred'|'thousand', op: '≈', answer }`, displayed as an instruction hint line + a big `347 ≈ ?`.
+
+| Level | Target | Value range |
+|---|---|---|
+| 1 | ten | 11–99 |
+| 2 | ten | 101–999 |
+| 3 | hundred | 111–999 |
+| 4 | hundred | 1001–9899 |
+| 5 | mixed: ten (<1000) / hundred (≤9899) / thousand (2001–8999) | — |
+
+Rules: the value is **never an exact multiple of the step** (no trivial questions); ties round **up** (`Math.round(v/step)*step`, e.g. 35→40, 250→300); ranges capped so the answer never exceeds 9999 (keypad max 4 digits). Hints come from i18n keys `round.instruction.ten/hundred/thousand` (EN "Round to the nearest ten/hundred/thousand"; ES "Redondea a la decena/centena más cercana" / "al millar más cercano"), built dynamically as `'round.instruction.' + target`. No operation-name i18n keys needed: pickers iterate `OPS` + `SYMBOLS`, so the `≈` button appears automatically in Level, Adaptive and Timed setup (and mixed rounds can draw it). The Multiplication Bomb Race stays tables-only (its rounding counterpart arrives in Step 13). Stats/badges work for free — `Mates.progress.record(res)` keys off `res.op`; profile data defaults gain `stats.round` and `adaptiveLevel.round: 2`.
+
+### Approximation Bomb Race ("Bomba de Redondeo", Step 13)
+A second bomb race on the same engine and rules as the multiplication one, with **10 progressive rounding quests** (`ROUND_QUEST_LEVELS` in `questions.js`): L1 single digits → ten · L2 two digits → ten · L3 three digits → ten · L4 three digits → hundred · L5 four digits → hundred · L6 four digits → thousand · L7 mixed three-digit (ten/hundred) · L8 mixed four-digit (hundred/thousand) · L9 full mix (all widths, all targets) · L10 expert mix (3- and 4-digit only). Each quest is one round of ten rounding questions — unique while the value space allows (L1 has only nine single digits, so its last slot is a repeat) — with the shared per-profile `bombTime` countdown. Map: boustrophedon 2×5 grid (`[1..5]` then `[10..6]`) reusing the bomb CSS classes; node states done ✓ / next (pulse) / failed 💥 / locked 🔒, progress chip "done / 10", all-done celebration. Profile data gains `bombRound: { frontier: 0, completed: [] }`; sequential unlock and the +50 first-clear bonus work exactly like the multiplication race; answers feed `stats.round` via the shared `Mates.progress.record`. The round engine's bomb path was generalized to accept caller-supplied `bomb.questions`, so both races share it. Home mode card 🧨; the original race is renamed in i18n to "Multiplication Bomb Race" / "Bomba de Multiplicaciones".
 
 ### Badges
 | id | Condition |
@@ -69,11 +87,11 @@ mates.profile.<id> = {
   points: number,
   currentStreak: number, bestStreak: number, lastPracticeDate: 'YYYY-MM-DD'|null,
   badges: [badgeId],
-  stats: { add:{answered,correct}, sub:{...}, mul:{...}, div:{...} },
+  stats: { add:{answered,correct}, sub:{...}, mul:{...}, div:{...}, round:{...} },
   highScores: { 'level.<op>.<level>': score },
   timedGoal: { target: 1-30, time: 10-300 },        // challenge goal (default 8 / 45 s)
   timedBest: { '<op>.<level>'|'mixed': seconds },   // fastest time to reach the goal (lower is better)
-  adaptiveLevel: { add:1-5, sub:1-5, mul:1-5, div:1-5 }
+  adaptiveLevel: { add:1-5, sub:1-5, mul:1-5, div:1-5, round:1-5 }
 }
 avatar = { face:0-2, skin:0-5, hair:0-5 (0=bald), hairColor:0-6, eyes:0-2, mouth:0-2 }
 ```
@@ -98,11 +116,15 @@ js/i18n.js            # t(key) helper
 js/i18n/en.js         # EN catalog (window.I18N.en)
 js/i18n/es.js         # ES catalog (window.I18N.es)
 js/avatar.js          # SVG part library + renderAvatar(config, size)
-js/questions.js       # generators per operation × level
+js/questions.js       # generators per operation × level (incl. round)
 js/badges.js          # badge definitions + checkBadges()
+js/sound.js           # WebAudio feedback (correct/wrong/badge beeps)
+js/round.js           # shared practice-round engine + round/results screens
 js/modes/level.js     # fixed-level mode
 js/modes/adaptive.js  # adaptive mode
 js/modes/timed.js     # timed challenge
+js/modes/bomb.js      # Multiplication Bomb Race (quest model + map screen)
+js/modes/bomb-round.js # Approximation Bomb Race (10 rounding quests, shared engine)
 icons/                # PNG icons (PWA 192/512/maskable, Android adaptive)
 ```
 
@@ -239,7 +261,30 @@ Notes (Step 9):
 - [x] CSS: map grid, dashed links/turns, node states + pulse animation, celebration banner
 - [x] Test: smoke.mjs step 11 — map render/lock/unlock, ordered quest 1, shuffled quest 2 (same ten pairs), success path (banner / elapsed / "10 / 10" / +50 bonus / points), failure path (💥 banner, "4 / 10", no bonus, retry with fresh countdown, frontier still advances), replay without bonus, bomb-time stepper + clamps + new quest uses configured time. 201 assertions pass
 - [x] SW cache bumped to `mates-v4`
-- [x] `git commit` (branch `bomb-race`, local only — push when asked)
+- [x] `git commit` (branch `bomb-race`; merged into `main` as PR #1)
+
+### Step 12 — Approximation (rounding) ✅
+- [x] Generator (`questions.js`): `OPS` + `'round'`, `SYMBOLS.round = '≈'`; `genRound(level)` per the level table above (do-while skips exact multiples of the step); `generate()` returns the round shape `{ value, target, answer }` early with `q.op = '≈'`; `key()` is round-aware (`value+op+target`)
+- [x] Storage (`storage.js`): `OPS` includes `round`; `adaptiveLevel` defaults gain `round: 2` in **both** `profileDataDefaults()` and the merge in `profileData.get()` (old profiles)
+- [x] Round engine (`round.js`): `keyOf()` round-aware; new helpers `questionText(q)` (binary vs `value + ' ≈ ?'`) and `questionHint(q)` via a `ROUND_HINTS` map; `patchRound` patches `#roundQuestion` + `#roundHint`; the `.round-hint` div renders only for round questions
+- [x] i18n EN + ES: `round.instruction.ten/hundred/thousand` — built dynamically (`'round.instruction.' + target`), so the literal-call parity matcher doesn't cover them; smoke checks both catalogs explicitly
+- [x] Pickers: level/adaptive/timed setup iterate `OPS` + `SYMBOLS` → the `≈` button appears automatically (no per-mode changes); mixed rounds can draw round; Bomb Race untouched (tables only)
+- [x] CSS: `.round-hint` (1.05rem, `--text-muted`, centered) above the question
+- [x] Test: smoke.mjs approximation section — per-level generator invariants for all 5 levels (target / range / non-multiple / ties-up recompute / answer ≤ 9999), L5 actually draws all three targets, a round of 10 unique rounding questions, profile defaults `stats.round` + `adaptiveLevel.round`, the 3 instruction keys present in EN **and** ES, level-mode flow (≈ button on setup, hint + `≈ ?` render, answered via keypad from `peek().question.answer`, 10/10 results, stats + points recorded), ≈ button on adaptive and timed pickers. 219 assertions pass
+- [x] SW cache bumped to `mates-v5` (no new assets)
+- [x] `git commit` (branch `approximation`; pushed — PR #2, awaiting merge)
+
+### Step 13 — Approximation Bomb Race ("Bomba de Redondeo") ✅
+- [x] Quest table (`questions.js`): `ROUND_QUEST_LEVELS` — 10 progressive quests, each one spec `{ target, min, max }` or a list of specs picked at random (mixed quests); ranges capped so answers fit the 4-digit keypad; `genRoundQuest(level)` reuses the non-multiple do-while + ties-up rule from `genRound`; `roundQuestQuestions(level)` — ten questions, unique while the value space allows (L1's nine single digits fill the last slot with a repeat after the 500-attempt guard), Fisher-Yates shuffled
+- [x] Mode (`js/modes/bomb-round.js`, new file): `Mates.bombRoundQuest` (TOTAL 10; `info(id)` → map-node labels = digit width + target; `questions(id)`); home mode card 🧨; boustrophedon 2×5 map `[1..5]` / `[10..6]` reusing the bomb CSS classes
+- [x] Round engine (`round.js`): bomb cfg generalized to accept caller-supplied `bomb.questions`, so both races share the same bomb path
+- [x] Storage (`storage.js`): profile defaults gain `bombRound: { frontier: 0, completed: [] }` + read-time merge for old profiles; shares the existing per-profile `bombTime` (no new setting)
+- [x] Record (`recordBombRoundQuest`): `Mates.progress.record(res)` FIRST (feeds `stats.round`, score×10 points), then re-read profile data — frontier advances on any attempt, completed push + +50 bonus on first success only; failure retry restarts the same quest
+- [x] i18n EN + ES: original race renamed to "Multiplication Bomb Race" / "Bomba de Multiplicaciones"; new `bombRound.*` keys (title/hint/allDone) + `home.mode.bombRound`; `bomb.fail` banner shared by both races
+- [x] Bug fixed while testing: top-level `function` declarations in classic scripts are global bindings — bomb-round.js's first helpers `race()`/`nodeState()` shadowed bomb.js's same-named ones, so the multiplication map rendered from `.bombRound` state. Renamed to `roundRace()` / `roundNodeState()` (see Corrections)
+- [x] Test: smoke.mjs step 13 — quest L1 = values 1–9 → ten (one repeat allowed), shared bombTime honored, failure unlocks the next quest, +50 first-clear bonus only, stats.round fed by the race. 265 assertions pass
+- [x] SW cache bumped to `mates-v6`
+- [x] `git commit` (branch `approximation`; pushed — PR #2, awaiting merge)
 
 ---
 

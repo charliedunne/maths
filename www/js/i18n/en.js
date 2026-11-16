@@ -59,12 +59,17 @@ window.I18N.en = {
   'timed.goalLine': 'Goal: {n} correct in {t} s',
   'timed.bestTime': 'Best time: {n} s',
 
-  'home.mode.bomb': 'Bomb Race',
-  'bomb.title': 'Bomb Race',
+  'home.mode.bomb': 'Multiplication Bomb Race',
+  'bomb.title': 'Multiplication Bomb Race',
   'bomb.time': 'Bomb time (s)',
   'bomb.hint': 'Answer all 10 questions before the bomb explodes. Each quest unlocks the next one!',
   'bomb.fail': '💥 The bomb exploded! You got {got} of 10',
   'bomb.allDone': 'You escaped all 20 quests — a true bomb-defusing champion!',
+
+  'home.mode.bombRound': 'Approximation Bomb Race',
+  'bombRound.title': 'Approximation Bomb Race',
+  'bombRound.hint': 'Answer all 10 rounding questions before the bomb explodes. Each quest unlocks the next one!',
+  'bombRound.allDone': 'You defused all 10 bombs — a true approximation champion!',
 
   'level.title': 'Pick a level',
   'level.operation': 'Operation',
@@ -72,6 +77,9 @@ window.I18N.en = {
 
   'round.quit.confirm': 'Stop this round?',
   'round.level': 'Level {n}',
+  'round.instruction.ten': 'Round to the nearest ten',
+  'round.instruction.hundred': 'Round to the nearest hundred',
+  'round.instruction.thousand': 'Round to the nearest thousand',
 
   'results.title': 'Round complete!',
   'results.points': '+{n} points',

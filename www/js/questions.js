@@ -4,8 +4,8 @@
 window.Mates = window.Mates || {};
 
 Mates.questions = (function () {
-  const OPS = ['add', 'sub', 'mul', 'div'];
-  const SYMBOLS = { add: '+', sub: '−', mul: '×', div: '÷' };
+  const OPS = ['add', 'sub', 'mul', 'div', 'round'];
+  const SYMBOLS = { add: '+', sub: '−', mul: '×', div: '÷', round: '≈' };
 
   function randInt(min, max) { // inclusive both ends
     return min + Math.floor(Math.random() * (max - min + 1));
@@ -80,13 +80,108 @@ Mates.questions = (function () {
     return { a: d * q, b: d, answer: q };
   }
 
-  const GENERATORS = { add: genAdd, sub: genSub, mul: genMul, div: genDiv };
+  /** Rounding ("approximation"): whole numbers only, non-binary shape
+   *  { value, target, answer }. Never an exact multiple of the step (no
+   *  trivial questions); ties round up (35 -> 40); ranges are capped so
+   *  answers fit the 4-digit keypad (never 10000). */
+  function genRound(level) {
+    let target, min, max;
+    switch (level) {
+      case 1: target = 'ten'; min = 11; max = 99; break;        // within 100
+      case 2: target = 'ten'; min = 101; max = 999; break;      // 3-digit to tens
+      case 3: target = 'hundred'; min = 111; max = 999; break;  // 3-digit to hundreds
+      case 4: target = 'hundred'; min = 1001; max = 9899; break;// 4-digit to hundreds
+      default: {                                                // mixed targets
+        target = pick(['ten', 'hundred', 'thousand']);
+        if (target === 'ten') { min = 101; max = 999; }
+        else if (target === 'hundred') { min = 1001; max = 9899; }
+        else { min = 2001; max = 8999; }
+      }
+    }
+    const step = target === 'ten' ? 10 : (target === 'hundred' ? 100 : 1000);
+    let v;
+    do { v = randInt(min, max); } while (v % step === 0);
+    return { value: v, target: target, answer: Math.round(v / step) * step };
+  }
 
-  /** Generate one question. Returns { a, op, b, answer }. */
+  /** Approximation Bomb Race quest table (10 quests), progressive in digit
+   *  width and rounding target. Each entry is one spec { target, min, max }
+   *  or a list of specs picked at random (mixed quests). Ranges are capped
+   *  so answers fit the 4-digit keypad (never 10000). */
+  const ROUND_QUEST_LEVELS = [
+    { target: 'ten', min: 1, max: 9 },            // L1 single digits -> ten
+    { target: 'ten', min: 11, max: 99 },          // L2 two digits -> ten
+    { target: 'ten', min: 101, max: 999 },        // L3 three digits -> ten
+    { target: 'hundred', min: 111, max: 999 },    // L4 three digits -> hundred
+    { target: 'hundred', min: 1001, max: 9899 },  // L5 four digits -> hundred
+    { target: 'thousand', min: 2001, max: 8999 }, // L6 four digits -> thousand
+    [                                             // L7 mixed three digits
+      { target: 'ten', min: 101, max: 999 },
+      { target: 'hundred', min: 111, max: 999 }
+    ],
+    [                                             // L8 mixed four digits
+      { target: 'hundred', min: 1001, max: 9899 },
+      { target: 'thousand', min: 2001, max: 8999 }
+    ],
+    [                                             // L9 full mix (all widths)
+      { target: 'ten', min: 11, max: 999 },
+      { target: 'hundred', min: 111, max: 9899 },
+      { target: 'thousand', min: 2001, max: 8999 }
+    ],
+    [                                             // L10 expert mix (3- and 4-digit only)
+      { target: 'ten', min: 101, max: 999 },
+      { target: 'hundred', min: 111, max: 9899 },
+      { target: 'thousand', min: 2001, max: 8999 }
+    ]
+  ];
+
+  /** One rounding question for Approximation Bomb Race quest `level` (1–10). */
+  function genRoundQuest(level) {
+    const lv = Math.min(10, Math.max(1, level));
+    const specs = ROUND_QUEST_LEVELS[lv - 1];
+    const s = Array.isArray(specs) ? pick(specs) : specs;
+    const step = s.target === 'ten' ? 10 : (s.target === 'hundred' ? 100 : 1000);
+    let v;
+    do { v = randInt(s.min, s.max); } while (v % step === 0);
+    return { value: v, target: s.target, answer: Math.round(v / step) * step, op: SYMBOLS.round };
+  }
+
+  /** Ten rounding questions for quest `level`, shuffled. Questions are kept
+   *  unique while the level's value space allows it; a tiny space (quest 1:
+   *  single digits, only nine values) fills the last slots with repeats. */
+  function roundQuestQuestions(level) {
+    const qs = [];
+    const seen = {};
+    let guard = 0;
+    while (qs.length < 10 && guard++ < 500) {
+      const q = genRoundQuest(level);
+      const k = q.value + q.op + q.target;
+      if (seen[k]) continue; // prefer unique questions
+      seen[k] = true;
+      qs.push(q);
+    }
+    while (qs.length < 10) { // space exhausted: allow repeats
+      qs.push(genRoundQuest(level));
+    }
+    for (let i = qs.length - 1; i > 0; i--) { // Fisher-Yates shuffle
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = qs[i]; qs[i] = qs[j]; qs[j] = tmp;
+    }
+    return qs;
+  }
+
+  const GENERATORS = { add: genAdd, sub: genSub, mul: genMul, div: genDiv, round: genRound };
+
+  /** Generate one question. Returns { a, op, b, answer }, or the rounding
+   *  shape { value, target, op, answer }. */
   function generate(op, level) {
     const g = GENERATORS[op];
     if (!g) throw new Error('unknown operation: ' + op);
     const q = g(Math.min(5, Math.max(1, level)));
+    if (op === 'round') { // non-binary shape; answer already set
+      q.op = SYMBOLS.round;
+      return q;
+    }
     if (op === 'add') q.answer = q.a + q.b;
     else if (op === 'sub') q.answer = q.a - q.b;
     else if (op === 'mul') q.answer = q.a * q.b;
@@ -95,7 +190,10 @@ Mates.questions = (function () {
     return q;
   }
 
-  function key(q) { return q.a + q.op + q.b; }
+  /** Dedup key for a round; rounding questions use their own shape. */
+  function key(q) {
+    return q.value !== undefined ? q.value + q.op + q.target : q.a + q.op + q.b;
+  }
 
   /** Generate a round of `count` unique questions. */
   function generateRound(op, level, count) {
@@ -112,5 +210,6 @@ Mates.questions = (function () {
     return qs;
   }
 
-  return { OPS: OPS, SYMBOLS: SYMBOLS, generate: generate, generateRound: generateRound };
+  return { OPS: OPS, SYMBOLS: SYMBOLS, generate: generate, generateRound: generateRound,
+           genRoundQuest: genRoundQuest, roundQuestQuestions: roundQuestQuestions };
 })();

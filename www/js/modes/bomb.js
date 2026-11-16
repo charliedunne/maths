@@ -1,9 +1,10 @@
-/* Mates — Bomb Race ("Camino de la bomba"): a winding path of 20 quests,
- * two per multiplication table (1–10). Quest 2t-1 runs the ordered pairs
- * t×1…t×10; quest 2t is the same ten pairs in shuffled order. A quest is
- * won by answering all 10 before its countdown (per-profile bombTime,
- * default 60 s) hits zero. Attempting a quest — pass or fail — unlocks the
- * next one; every unlocked quest stays tappable for retries and replays. */
+/* Mates — Multiplication Bomb Race ("Bomba de Multiplicaciones"): a winding
+ * path of 20 quests, two per multiplication table (1–10). Quest 2t-1 runs
+ * the ordered pairs t×1…t×10; quest 2t is the same ten pairs in shuffled
+ * order. A quest is won by answering all 10 before its countdown (per-profile
+ * bombTime, default 60 s) hits zero. Attempting a quest — pass or fail —
+ * unlocks the next one; every unlocked quest stays tappable for retries and
+ * replays. */
 window.Mates = window.Mates || {};
 Mates.screens = Mates.screens || {};
 Mates.actions = Mates.actions || {};

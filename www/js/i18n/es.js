@@ -59,12 +59,17 @@ window.I18N.es = {
   'timed.goalLine': 'Objetivo: {n} aciertos en {t} s',
   'timed.bestTime': 'Mejor tiempo: {n} s',
 
-  'home.mode.bomb': 'Camino de la bomba',
-  'bomb.title': 'Camino de la bomba',
+  'home.mode.bomb': 'Bomba de Multiplicaciones',
+  'bomb.title': 'Bomba de Multiplicaciones',
   'bomb.time': 'Tiempo de la bomba (s)',
   'bomb.hint': 'Responde las 10 preguntas antes de que explote la bomba. ¡Cada misión desbloquea la siguiente!',
   'bomb.fail': '💥 ¡La bomba explotó! Conseguiste {got} de 10',
   'bomb.allDone': '¡Escapaste de las 20 misiones! Eres un campeón desactivando bombas',
+
+  'home.mode.bombRound': 'Bomba de Redondeo',
+  'bombRound.title': 'Bomba de Redondeo',
+  'bombRound.hint': 'Responde las 10 preguntas de redondeo antes de que explote la bomba. ¡Cada misión desbloquea la siguiente!',
+  'bombRound.allDone': '¡Desactivaste las 10 bombas! Eres un campeón del redondeo',
 
   'level.title': 'Elige un nivel',
   'level.operation': 'Operación',
@@ -72,6 +77,9 @@ window.I18N.es = {
 
   'round.quit.confirm': '¿Terminar esta ronda?',
   'round.level': 'Nivel {n}',
+  'round.instruction.ten': 'Redondea a la decena más cercana',
+  'round.instruction.hundred': 'Redondea a la centena más cercana',
+  'round.instruction.thousand': 'Redondea al millar más cercano',
 
   'results.title': '¡Ronda terminada!',
   'results.points': '+{n} puntos',

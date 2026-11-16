@@ -1,8 +1,10 @@
 /* Mates — shared practice-round engine.
  * Used by all modes: level (fixed), adaptive, timed and Bomb Race.
  * cfg = { op, level, count, timed?, adaptive?, bomb?, returnScreen, onComplete(results) }
- * bomb = { quest, time }: a fixed list of ten questions with one countdown
- * for the whole quest (see js/modes/bomb.js).
+ * bomb = { quest, time, questions? }: a fixed list of ten questions with one
+ * countdown for the whole quest. Without `questions` the Bomb Race table
+ * pairs are used (js/modes/bomb.js); other races pass their own list
+ * (js/modes/bomb-round.js).
  * Adaptive rules (spec): step up after 3 consecutive correct,
  * step down after 2 wrong, clamped to levels 1–5. */
 window.Mates = window.Mates || {};
@@ -40,7 +42,25 @@ Mates.round = (function () {
     return r.currentQ;
   }
 
-  function keyOf(q) { return q.a + q.op + q.b; }
+  /** Dedup key; rounding questions use their non-binary shape. */
+  function keyOf(q) {
+    return q.value !== undefined ? q.value + q.op + q.target : q.a + q.op + q.b;
+  }
+
+  /** Display text for a question; rounding uses "347 ≈ ?". */
+  function questionText(q) {
+    return q.value !== undefined ? q.value + ' ' + q.op + ' ?' : q.a + ' ' + q.op + ' ' + q.b + ' = ?';
+  }
+
+  /** Instruction line above a rounding question, per target. */
+  const ROUND_HINTS = {
+    ten: 'round.instruction.ten',
+    hundred: 'round.instruction.hundred',
+    thousand: 'round.instruction.thousand'
+  };
+  function questionHint(q) {
+    return q.value !== undefined ? Mates.t(ROUND_HINTS[q.target]) : '';
+  }
 
   /** Start a round and show the round screen. */
   function start(cfg) {
@@ -70,7 +90,7 @@ Mates.round = (function () {
       // are generated on demand (also required for "mixed" operation).
       // Bomb Race runs a fixed list of ten questions with one countdown.
       count: bomb ? 10 : (cfg.timed ? Infinity : (cfg.count || 10)),
-      questions: bomb ? Mates.bombQuest.questions(bomb.quest)
+      questions: bomb ? (bomb.questions || Mates.bombQuest.questions(bomb.quest))
         : ((cfg.adaptive || cfg.timed) ? null
           : Mates.questions.generateRound(cfg.op, cfg.level, cfg.count)),
       currentQ: null,
@@ -133,7 +153,10 @@ Mates.round = (function () {
     if (chip) chip.textContent = Mates.t('round.level', { n: r.level });
     const q = currentQuestion();
     const question = document.getElementById('roundQuestion');
-    if (question && q) question.textContent = q.a + ' ' + q.op + ' ' + q.b + ' = ?';
+    if (question && q) question.textContent = questionText(q);
+    // Rounding questions carry an instruction line; other ops have none.
+    const hint = document.getElementById('roundHint');
+    if (hint && q) hint.textContent = questionHint(q);
     patchAnswer();
     const fb = document.getElementById('roundFeedback');
     if (fb) {
@@ -311,8 +334,10 @@ Mates.round = (function () {
 
       '<div class="card round-card">' +
         levelChip +
-        '<div class="round-question" id="roundQuestion">' + s.question.a + ' ' + s.question.op + ' ' +
-          s.question.b + ' = ?</div>' +
+        (s.question.value !== undefined
+          ? '<div class="round-hint" id="roundHint">' + Mates.esc(questionHint(s.question)) + '</div>'
+          : '') +
+        '<div class="round-question" id="roundQuestion">' + questionText(s.question) + '</div>' +
         '<div class="round-answer" id="roundAnswer">' + (s.input || '&nbsp;') + '</div>' +
         feedback +
         '<div class="round-flash" id="roundFlash"></div>' +

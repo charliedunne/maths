@@ -6,8 +6,8 @@
  *
  * Config slots (all integers, 0 = none/default):
  *   face 0-2, skin 0-7, hair 0-9 (0=bald), hairColor 0-9,
- *   eyes 0-2, mouth 0-2, glasses 0-4, hat 0-4, hairpin 0-4,
- *   earrings 0-2, freckles 0-1. */
+ *   eyes 0-2, eyeColor 0-4, mouth 0-2, glasses 0-4, hat 0-4,
+ *   hairpin 0-4, earrings 0-2, freckles 0-1. */
 window.Mates = window.Mates || {};
 
 Mates.avatar = (function () {
@@ -15,7 +15,8 @@ Mates.avatar = (function () {
                  '#d1946a', '#a9714b', '#7c5236', '#5c3a24'];
   const HAIR_COLORS = ['#e8b64c', '#8d5a3a', '#3a3138', '#b5573a', '#9a9aa5',
                        '#5b8dd9', '#e88bb0', '#b39ddb', '#7fd1ae', '#f2994a'];
-  const INK = '#3a3138';      /* eyes / mouth line color */
+  const EYE_COLORS = ['#3a3138', '#5b8dd9', '#67a05c', '#9b8cd9', '#e96b9f'];
+  const INK = '#3a3138';      /* mouth / frame line color */
   const MOUTH_FILL = '#9c4a3c';
   const CHEEK = '#ef8f7f';
   const GOLD = '#f2c14e';
@@ -24,7 +25,7 @@ Mates.avatar = (function () {
   const LAVENDER = '#9b8cd9';
 
   /** Default avatar config (also the bounds for random()). */
-  const DEFAULT = { face: 0, skin: 1, hair: 1, hairColor: 1, eyes: 0, mouth: 0,
+  const DEFAULT = { face: 0, skin: 1, hair: 1, hairColor: 1, eyes: 0, eyeColor: 0, mouth: 0,
                     glasses: 0, hat: 0, hairpin: 0, earrings: 0, freckles: 0 };
 
   function faceShape(kind, fill) {
@@ -46,17 +47,17 @@ Mates.avatar = (function () {
       '<circle cx="73" cy="59" r="1.3"/><circle cx="68" cy="62" r="1.3"/><circle cx="71" cy="65" r="1.3"/></g>';
   }
 
-  function eyes(kind) {
+  function eyes(kind, color) {
     switch (kind) {
       case 1: /* happy arcs */
-        return '<path d="M 33 53 Q 38 47 43 53" stroke="' + INK + '" stroke-width="3.5" fill="none" stroke-linecap="round"/>' +
-               '<path d="M 57 53 Q 62 47 67 53" stroke="' + INK + '" stroke-width="3.5" fill="none" stroke-linecap="round"/>';
+        return '<path d="M 33 53 Q 38 47 43 53" stroke="' + color + '" stroke-width="3.5" fill="none" stroke-linecap="round"/>' +
+               '<path d="M 57 53 Q 62 47 67 53" stroke="' + color + '" stroke-width="3.5" fill="none" stroke-linecap="round"/>';
       case 2: /* wide with highlights */
-        return '<circle cx="38" cy="52" r="5.5" fill="' + INK + '"/><circle cx="40" cy="50" r="1.8" fill="#fff"/>' +
-               '<circle cx="62" cy="52" r="5.5" fill="' + INK + '"/><circle cx="64" cy="50" r="1.8" fill="#fff"/>';
+        return '<circle cx="38" cy="52" r="5.5" fill="' + color + '"/><circle cx="40" cy="50" r="1.8" fill="#fff"/>' +
+               '<circle cx="62" cy="52" r="5.5" fill="' + color + '"/><circle cx="64" cy="50" r="1.8" fill="#fff"/>';
       default: /* dots */
-        return '<circle cx="38" cy="52" r="3.5" fill="' + INK + '"/>' +
-               '<circle cx="62" cy="52" r="3.5" fill="' + INK + '"/>';
+        return '<circle cx="38" cy="52" r="3.5" fill="' + color + '"/>' +
+               '<circle cx="62" cy="52" r="3.5" fill="' + color + '"/>';
     }
   }
 
@@ -201,13 +202,14 @@ Mates.avatar = (function () {
     const c = Object.assign({}, DEFAULT, config || {});
     const skin = SKINS[c.skin] || SKINS[0];
     const hairColor = HAIR_COLORS[c.hairColor] || HAIR_COLORS[0];
+    const eyeColor = EYE_COLORS[c.eyeColor] || EYE_COLORS[0];
 
     let svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="' + size + '" height="' + size + '" role="img" aria-hidden="true">';
     svg += hairBack(c.hair, hairColor);
     svg += faceShape(c.face, skin);
     svg += cheeks();
     if (c.freckles) svg += freckles();
-    svg += eyes(c.eyes);
+    svg += eyes(c.eyes, eyeColor);
     svg += mouth(c.mouth);
     svg += hairFront(c.hair, hairColor);
     svg += earrings(c.earrings);
@@ -222,9 +224,10 @@ Mates.avatar = (function () {
   function random() {
     const pick = function (n) { return Math.floor(Math.random() * n); };
     return { face: pick(3), skin: pick(SKINS.length), hair: pick(10), hairColor: pick(HAIR_COLORS.length),
-             eyes: pick(3), mouth: pick(3), glasses: pick(5), hat: pick(5), hairpin: pick(5),
-             earrings: pick(3), freckles: pick(2) };
+             eyes: pick(3), eyeColor: pick(EYE_COLORS.length), mouth: pick(3), glasses: pick(5),
+             hat: pick(5), hairpin: pick(5), earrings: pick(3), freckles: pick(2) };
   }
 
-  return { DEFAULT: DEFAULT, SKINS: SKINS, HAIR_COLORS: HAIR_COLORS, render: render, random: random };
+  return { DEFAULT: DEFAULT, SKINS: SKINS, HAIR_COLORS: HAIR_COLORS, EYE_COLORS: EYE_COLORS,
+           render: render, random: random };
 })();

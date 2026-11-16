@@ -7,8 +7,8 @@
 4. When all boxes of a step are done: mark them `[x]`, update **Current status**, and `git commit` (user=charliedunne, email=charlie.dunne@gmail.com).
 
 ## Current status
-- All planned steps done on branch `cosmetic-improvement` (off `main` = `601bd05`). Nothing in progress.
-- Last updated: 2026-11-16 — Steps 1–8 + 10–13 merged into `main`. On branch `cosmetic-improvement`: **Step 14 (cozy pastel refresh)** — cream-pink/peach/lavender/mint light palette, deep plum-navy dark palette, rounded type, layered dot+glow background, pill gradient buttons with press-squash, top-light cards, 3D keypad, sparkle/badge/hover micro-animations, full pastel icon set re-rendered (PWA + Android adaptive). **Step 15 (avatar variability)** — new slots glasses/hat/hairpin/earrings/freckles, hair 6→10 styles, skin 6→8, hairColor 7→10, read-time avatar merge for old profiles, five new builder rows, EN/ES labels, SW `mates-v8`. 275 smoke assertions pass. Remaining: build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5); branch not yet pushed/PR'd.
+- Nothing in progress. All app steps done; awaiting user merge of **PR #3** (`cosmetic-improvement` → `main`) and **PR #4** (`avatar-profile-edit` → `cosmetic-improvement`, stacked on #3).
+- Last updated: 2026-11-16 — Steps 1–8 + 10–13 merged into `main`. Branch `cosmetic-improvement` (pushed, **PR #3 open** against `main`): **Step 14 (cozy pastel refresh)** — cream-pink/peach/lavender/mint light palette, deep plum-navy dark palette, rounded type, layered dot+glow background, pill gradient buttons with press-squash, top-light cards, 3D keypad, sparkle/badge/hover micro-animations, full pastel icon set re-rendered (PWA + Android adaptive). **Step 15 (avatar variability)** — new slots glasses/hat/hairpin/earrings/freckles, hair 6→10 styles, skin 6→8, hairColor 7→10, read-time avatar merge for old profiles, five new builder rows, EN/ES labels, SW `mates-v8`. Branch `avatar-profile-edit` (pushed, **PR #4 open** against `cosmetic-improvement`, stacked on PR #3): **Step 16 (profile avatar editing)** — tappable avatar row in profile settings opens the builder in edit mode (pre-filled name + parts; rename allowed); `Mates.profiles.update(id, {name?, avatar?})`; edit-mode title/save labels + back-to-settings navigation; EN/ES keys; SW `mates-v9`. **Step 17 (skin + eye color)** — skin was in the model but missing from the builder UI; new `eyeColor` slot (5 shades) wired through renderer/random/merge; generic swatch-row helper adds "Skin color" (8 tones) and "Eye color" rows; EN/ES keys; SW `mates-v10`. 298 smoke assertions pass. Remaining: build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5).
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -306,6 +306,25 @@ Notes (Step 9):
 - [x] i18n EN + ES for all new part labels
 - [x] Test: SVG bounds across all new parts × combos (incl. hat-over-hair layering), builder flow with the new rows, old-profile merge regression — 275 assertions pass
 - [x] SW cache bumped to `mates-v8`
+- [x] `git commit`
+
+### Step 16 — Profile avatar editing (branch `avatar-profile-edit`, off `cosmetic-improvement`)
+- [x] Storage: `Mates.profiles.update(id, patch)` — merges `{ name?, avatar? }` into the stored record (avatar normalized through `DEFAULT` like `create`); preserves id + `createdAt`; returns null for unknown ids
+- [x] Builder edit mode: `building = { name, config, mode: 'edit', id }`; title "Edit profile"/"Editar perfil", save button "Save"/"Guardar" (create mode keeps "New profile"/"Start playing"); back returns to profile settings instead of the grid; renaming via the existing name input is allowed (free bonus)
+- [x] Entry point: tappable avatar row on the profileSettings screen (⚙ screen) with an "Edit avatar"/"Editar avatar" hint — single discoverable entry, no home-screen tap target in v1
+- [x] Save flow: edit mode calls `profiles.update` and returns to profile settings; home re-renders the avatar on navigation, so the new face shows up automatically
+- [x] i18n EN + ES: `profileSettings.editAvatar`, `builder.title.edit`, `builder.save.edit` (covered by the existing parity scanner)
+- [x] Test: edit flow (pre-filled name/parts → part change + rename → save persists, id/createdAt preserved), rename-back, back-navigation in both modes, create-mode regression, `profiles.update` partial-merge + unknown-id — 291 assertions pass
+- [x] SW cache bumped to `mates-v9`
+- [x] `git commit`
+
+### Step 17 — Skin + eye color selection (branch `avatar-profile-edit`)
+- [x] Avatar model: new slot `eyeColor` (0–4: charcoal · blue · green · violet · rose); skin was already in the model but had no builder row
+- [x] Renderer: `eyes()` takes a color param; legacy avatars without `eyeColor` fall back to default 0 (same charcoal as before → no visual change for old profiles)
+- [x] Builder UI: generic `swatchRow(part, labelKey, colors)` helper — "Skin color" row (8 tones) after Face, "Eye color" row (5 shades) after Eyes; hair-color row reuses the same helper
+- [x] i18n EN + ES: `builder.skin`, `builder.eyeColor`; parity scanner regex extended to cover `swatchRow` label keys
+- [x] Test: 5 eye colors × 3 styles render in bounds with the chosen hex, legacy fallback, all 8 skin tones render, random() bounds, builder rows shown + persistence — 298 assertions pass
+- [x] SW cache bumped to `mates-v10`
 - [x] `git commit`
 
 ---

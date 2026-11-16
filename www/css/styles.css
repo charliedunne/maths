@@ -269,6 +269,10 @@ body {
 
 .setting-label { font-weight: 700; }
 
+/* Tappable rows (e.g. "edit avatar" in profile settings) */
+.settings-row[data-action] { cursor: pointer; }
+.edit-hint { color: var(--primary); font-weight: 700; white-space: nowrap; }
+
 /* ---------- Goal stepper (profile settings) ---------- */
 .stepper { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 

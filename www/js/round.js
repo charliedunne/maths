@@ -1,8 +1,10 @@
 /* Mates — shared practice-round engine.
  * Used by all modes: level (fixed), adaptive, timed and Bomb Race.
  * cfg = { op, level, count, timed?, adaptive?, bomb?, returnScreen, onComplete(results) }
- * bomb = { quest, time }: a fixed list of ten questions with one countdown
- * for the whole quest (see js/modes/bomb.js).
+ * bomb = { quest, time, questions? }: a fixed list of ten questions with one
+ * countdown for the whole quest. Without `questions` the Bomb Race table
+ * pairs are used (js/modes/bomb.js); other races pass their own list
+ * (js/modes/bomb-round.js).
  * Adaptive rules (spec): step up after 3 consecutive correct,
  * step down after 2 wrong, clamped to levels 1–5. */
 window.Mates = window.Mates || {};
@@ -88,7 +90,7 @@ Mates.round = (function () {
       // are generated on demand (also required for "mixed" operation).
       // Bomb Race runs a fixed list of ten questions with one countdown.
       count: bomb ? 10 : (cfg.timed ? Infinity : (cfg.count || 10)),
-      questions: bomb ? Mates.bombQuest.questions(bomb.quest)
+      questions: bomb ? (bomb.questions || Mates.bombQuest.questions(bomb.quest))
         : ((cfg.adaptive || cfg.timed) ? null
           : Mates.questions.generateRound(cfg.op, cfg.level, cfg.count)),
       currentQ: null,

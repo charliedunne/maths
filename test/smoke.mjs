@@ -23,6 +23,7 @@ const SCRIPTS = [
   'js/modes/adaptive.js',
   'js/modes/timed.js',
   'js/modes/bomb.js',
+  'js/modes/bomb-round.js',
   'js/app.js'
 ];
 
@@ -759,7 +760,7 @@ console.log('step 8 (i18n parity)');
     }
   }
   // Dynamic keys: badge/mode nameKey + descKey, and builder partRow labelKey.
-  for (const f of ['js/badges.js', 'js/modes/level.js', 'js/modes/adaptive.js', 'js/modes/timed.js', 'js/modes/bomb.js']) {
+  for (const f of ['js/badges.js', 'js/modes/level.js', 'js/modes/adaptive.js', 'js/modes/timed.js', 'js/modes/bomb.js', 'js/modes/bomb-round.js']) {
     const src = readFileSync(path.join(WEB, f), 'utf8');
     for (const m of src.matchAll(/(?:nameKey|descKey):\s*'([^']+)'/g)) used.add(m[1]);
   }
@@ -838,7 +839,7 @@ const longId = page.ctx.Mates.profiles.list().find(p => p.name === LONG_NAME).id
 /* Home shows the Bomb Race mode card. */
 page.appEl.click({ dataset: { action: 'backToProfiles' } });
 page.appEl.click({ dataset: { action: 'selectProfile', id: longId } });
-check('home shows bomb race card (ES)', page.appEl.innerHTML.includes('data-action="bombEnter"') && page.appEl.innerHTML.includes('Camino de la bomba'));
+check('home shows bomb race card (ES)', page.appEl.innerHTML.includes('data-action="bombEnter"') && page.appEl.innerHTML.includes('Bomba de Multiplicaciones'));
 
 /* Map: 20 nodes, quest 1 is the next mission, the rest locked, progress 0/20. */
 page.appEl.click({ dataset: { action: 'bombEnter' } });
@@ -871,7 +872,7 @@ check('points: score×10 + 50 first-clear bonus', dB.points === ptsBeforeQ1 + 15
 check('quest 1 completed, frontier advanced to 1', dB.bombRace.completed.join(',') === '1' && dB.bombRace.frontier === 1);
 page.appEl.click({ dataset: { action: 'resultsContinue' } });
 map = page.appEl.innerHTML;
-check('continue returns to the map', map.includes('Camino de la bomba'));
+check('continue returns to the map', map.includes('Bomba de Multiplicaciones'));
 check('node 1 done, node 2 next, progress 1 / 20',
   map.includes('bomb-node--done" data-action="bombNode" data-quest="1"') &&
   map.includes('bomb-node--next" data-action="bombNode" data-quest="2"') &&
@@ -930,7 +931,7 @@ check('replay earns score points only (+100)', page.appEl.innerHTML.includes('+1
 dB = PB();
 check('no duplicate in the completed list', dB.bombRace.completed.filter(q => q === 1).length === 1);
 page.appEl.click({ dataset: { action: 'resultsContinue' } });
-check('continue from a replay returns to the map', page.appEl.innerHTML.includes('Camino de la bomba'));
+check('continue from a replay returns to the map', page.appEl.innerHTML.includes('Bomba de Multiplicaciones'));
 
 /* Per-profile bomb time: default 60 s, step ±5 s, clamped to 20–300 s. */
 page.appEl.click({ dataset: { action: 'bombBack' } }); // map -> home
@@ -968,6 +969,156 @@ page.appEl.click({ dataset: { action: 'bombEnter' } });
 page.appEl.click({ dataset: { action: 'bombNode', quest: '4' } });
 rt = page.ctx.Mates.round.peek();
 check('new quest uses the configured bomb time (45 s)', rt.bomb.quest === 4 && rt.timeLeft === 45);
+
+/* ---------- Step 13: Approximation Bomb Race ---------- */
+console.log('step 13 (approximation bomb race)');
+
+/* Finish the multiplication quest 4 left open by step 11 — also a regression
+ * check that mul quests still use the table-pairs path after the engine was
+ * generalized to accept caller-supplied question lists. */
+for (let i = 0; i < 10; i++) answer(true);
+check('mul quest 4 completes after engine generalization', page.appEl.innerHTML.includes('>10 / 10<'));
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
+/* Quest-level generator invariants for all 10 levels. */
+const RQ_LEVELS = [
+  { lv: 1, targets: ['ten'], ranges: { ten: [1, 9] } },
+  { lv: 2, targets: ['ten'], ranges: { ten: [11, 99] } },
+  { lv: 3, targets: ['ten'], ranges: { ten: [101, 999] } },
+  { lv: 4, targets: ['hundred'], ranges: { hundred: [111, 999] } },
+  { lv: 5, targets: ['hundred'], ranges: { hundred: [1001, 9899] } },
+  { lv: 6, targets: ['thousand'], ranges: { thousand: [2001, 8999] } },
+  { lv: 7, targets: ['ten', 'hundred'], ranges: { ten: [101, 999], hundred: [111, 999] } },
+  { lv: 8, targets: ['hundred', 'thousand'], ranges: { hundred: [1001, 9899], thousand: [2001, 8999] } },
+  { lv: 9, targets: ['ten', 'hundred', 'thousand'], ranges: { ten: [11, 999], hundred: [111, 9899], thousand: [2001, 8999] } },
+  { lv: 10, targets: ['ten', 'hundred', 'thousand'], ranges: { ten: [101, 999], hundred: [111, 9899], thousand: [2001, 8999] } }
+];
+RQ_LEVELS.forEach(({ lv, targets, ranges }) =>
+  assertAll('round quest L' + lv, Array.from({ length: 60 }, () => Q.genRoundQuest(lv)), q => {
+    const step = q.target === 'ten' ? 10 : (q.target === 'hundred' ? 100 : 1000);
+    const range = ranges[q.target];
+    return targets.includes(q.target) && q.value >= range[0] && q.value <= range[1] &&
+      q.value % step !== 0 && q.op === '≈' &&
+      q.answer === Math.round(q.value / step) * step && q.answer <= 9999;
+  }));
+
+/* Mixed levels actually draw more than one target. */
+check('quest L7 mixes ten/hundred', new Set(Array.from({ length: 200 }, () => Q.genRoundQuest(7)).map(q => q.target)).size === 2);
+check('quest L9 draws all three targets', new Set(Array.from({ length: 300 }, () => Q.genRoundQuest(9)).map(q => q.target)).size === 3);
+
+/* Ten unique questions per quest (random per attempt, unlike the mul tables). */
+{
+  const qs = Q.roundQuestQuestions(5);
+  check('quest questions: 10 unique', qs.length === 10 && new Set(qs.map(q => q.value + q.op + q.target)).size === 10);
+}
+
+/* Profile data defaults cover the new race. */
+check('profile data has bombRound defaults', (() => { const d = PB(); return d.bombRound.frontier === 0 && d.bombRound.completed.length === 0; })());
+
+/* Home shows the new mode card (ES). */
+page.appEl.click({ dataset: { action: 'bombBack' } }); // map -> home
+let rhome = page.appEl.innerHTML;
+check('home shows approximation bomb race card (ES)', rhome.includes('data-action="bombRoundEnter"') && rhome.includes('Bomba de Redondeo'));
+
+/* Map: 10 nodes, quest 1 is the next mission, the rest locked, progress 0/10. */
+page.appEl.click({ dataset: { action: 'bombRoundEnter' } });
+let rmap = page.appEl.innerHTML;
+check('round map renders 10 nodes', (rmap.match(/bomb-node bomb-node--/g) || []).length === 10);
+check('round map progress chip 0 / 10', rmap.includes('>0 / 10<'));
+check('quest 1 is the next mission', rmap.includes('bomb-node--next" data-action="bombRoundNode" data-quest="1"'));
+check('quest 3 locked and disabled', rmap.includes('bomb-node--locked" disabled data-action="bombRoundNode" data-quest="3"'));
+
+/* Quest 1: single digits to the ten, one countdown for the whole quest.
+ * The race reuses the shared per-profile bomb time (set back to 60 first). */
+{ const d = PB(); d.bombTime = 60; page.ctx.Mates.profileData.save(longId, d); }
+const ptsBeforeR1 = PB().points;
+page.appEl.click({ dataset: { action: 'bombRoundNode', quest: '1' } });
+let rrt = page.ctx.Mates.round.peek();
+check('quest 1 starts as a timed round of ten rounding questions',
+  rrt.timed && rrt.count === 10 && rrt.timeLeft === 60 && rrt.bomb.quest === 1 && rrt.op === 'round');
+page.ctx.Mates.round.tick(); // one second passes so elapsed is 1, not 0
+let l1ok = true;
+for (let i = 0; i < 10; i++) {
+  const q = page.ctx.Mates.round.peek().question; // peek BEFORE answering
+  if (!(q.target === 'ten' && q.value >= 1 && q.value <= 9)) l1ok = false;
+  answer(true);
+}
+check('quest 1 runs single digits to the ten', l1ok);
+check('bomb success banner (ES)', page.appEl.innerHTML.includes('🎉 ¡Lo lograste!'));
+check('elapsed time shown (en 1 s)', page.appEl.innerHTML.includes('en 1 s'));
+check('score line 10 / 10', page.appEl.innerHTML.includes('>10 / 10<'));
+check('first-clear bonus +50 shown (ES)', page.appEl.innerHTML.includes('🎁 +50 puntos extra'));
+{
+  const d = PB();
+  check('points: score×10 + 50 first-clear bonus', d.points === ptsBeforeR1 + 150);
+  check('quest 1 completed, frontier advanced to 1', d.bombRound.completed.join(',') === '1' && d.bombRound.frontier === 1);
+}
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+rmap = page.appEl.innerHTML;
+check('continue returns to the round map', rmap.includes('Bomba de Redondeo'));
+check('node 1 done, node 2 next, progress 1 / 10',
+  rmap.includes('bomb-node--done" data-action="bombRoundNode" data-quest="1"') &&
+  rmap.includes('bomb-node--next" data-action="bombRoundNode" data-quest="2"') &&
+  rmap.includes('>1 / 10<'));
+
+/* Quest 2 uses the configured shared bomb time; two digits to the ten. */
+{ const d = PB(); d.bombTime = 45; page.ctx.Mates.profileData.save(longId, d); }
+page.appEl.click({ dataset: { action: 'bombRoundNode', quest: '2' } });
+rrt = page.ctx.Mates.round.peek();
+check('quest 2 uses the configured bomb time (45 s)', rrt.bomb.quest === 2 && rrt.timeLeft === 45);
+let l2ok = true;
+for (let i = 0; i < 10; i++) {
+  const q = page.ctx.Mates.round.peek().question;
+  if (!(q.target === 'ten' && q.value >= 11 && q.value <= 99)) l2ok = false;
+  answer(true);
+}
+check('quest 2 runs two digits to the ten', l2ok);
+{
+  const d = PB();
+  check('completed [1,2], frontier 2', d.bombRound.completed.join(',') === '1,2' && d.bombRound.frontier === 2);
+}
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
+/* Quest 3: timeout -> explosion; the next quest is still unlocked. */
+page.appEl.click({ dataset: { action: 'bombRoundNode', quest: '3' } });
+for (let i = 0; i < 3; i++) answer(true);
+answer(false); // one wrong, so correct < answered in the stats check below
+for (let i = 0; i < 45; i++) page.ctx.Mates.round.tick();
+check('round bomb fail banner (ES)', page.appEl.innerHTML.includes('💥 ¡La bomba explotó! Conseguiste 3 de 10'));
+check('fail score line 3 / 10', page.appEl.innerHTML.includes('>3 / 10<'));
+check('no bonus on failure', !page.appEl.innerHTML.includes('🎁'));
+check('retry offered (ES)', page.appEl.innerHTML.includes('data-action="resultsRetry"') && page.appEl.innerHTML.includes('Intentar otra vez'));
+{
+  const d = PB();
+  check('failure still unlocks the next quest (frontier 3)', d.bombRound.frontier === 3);
+  check('completed unchanged after failure', d.bombRound.completed.join(',') === '1,2');
+}
+
+/* Retry restarts the same quest with a fresh full countdown. */
+page.appEl.click({ dataset: { action: 'resultsRetry' } });
+rrt = page.ctx.Mates.round.peek();
+check('retry: fresh round, same quest, full time', rrt.bomb.quest === 3 && rrt.timeLeft === 45 && rrt.score === 0);
+for (let i = 0; i < 10; i++) answer(true);
+{
+  const d = PB();
+  check('retried quest completed with its first-clear bonus', d.bombRound.completed.join(',') === '1,2,3' && page.appEl.innerHTML.includes('🎁 +50 puntos extra'));
+}
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
+/* Replay a completed quest: points, but no second bonus. */
+const ptsBeforeRReplay = PB().points;
+page.appEl.click({ dataset: { action: 'bombRoundNode', quest: '1' } });
+for (let i = 0; i < 10; i++) answer(true);
+check('replay success has no bonus line', !page.appEl.innerHTML.includes('🎁'));
+check('replay earns score points only (+100)', page.appEl.innerHTML.includes('+100 puntos') && PB().points === ptsBeforeRReplay + 100);
+{
+  const d = PB();
+  check('no duplicate in the completed list', d.bombRound.completed.filter(q => q === 1).length === 1);
+  // stats.round fed by the race: 10+10+(3+1)+10+10 answered, one wrong on the failed attempt.
+  check('rounding stats fed by the race (44 answered / 43 correct)', d.stats.round.answered === 44 && d.stats.round.correct === 43);
+}
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+check('continue from a replay returns to the round map', page.appEl.innerHTML.includes('Bomba de Redondeo'));
 
 console.log(failures === 0 ? '\nAll smoke tests passed.' : `\n${failures} test(s) FAILED.`);
 process.exit(failures === 0 ? 0 : 1);

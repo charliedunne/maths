@@ -130,8 +130,9 @@ function profileDataDefaults() {
     adaptiveLevel: { add: 2, sub: 2, mul: 2, div: 2, round: 2 },
     timedGoal: { target: 8, time: 45 }, // goal-based challenge: N correct in T seconds
     timedBest: {},           // fastest times (seconds) to reach the goal, keyed like 'mul.3' or 'mixed'
-    bombTime: 60,            // Bomb Race countdown per quest (seconds)
-    bombRace: { frontier: 0, completed: [] } // attempted quests are always 1..frontier
+    bombTime: 60,            // Bomb Race countdown per quest (seconds), shared by both races
+    bombRace: { frontier: 0, completed: [] },   // multiplication race: attempted quests are 1..frontier
+    bombRound: { frontier: 0, completed: [] }   // approximation race: same shape
   };
 }
 
@@ -186,6 +187,7 @@ Mates.profileData = {
     d.timedBest = Object.assign({}, saved.timedBest);
     d.bombTime = Mates.bombTime.clamp(saved.bombTime);
     d.bombRace = Object.assign({ frontier: 0, completed: [] }, saved.bombRace);
+    d.bombRound = Object.assign({ frontier: 0, completed: [] }, saved.bombRound);
     // Migration: drop obsolete count-based 'timed.*' high-score keys on read.
     Object.keys(d.highScores).forEach(function (k) {
       if (k.indexOf('timed.') === 0) delete d.highScores[k];

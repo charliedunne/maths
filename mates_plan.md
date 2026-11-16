@@ -8,7 +8,7 @@
 
 ## Current status
 - Step in progress: **none** — all steps complete except Step 9 box 5 (debug APK build, blocked on this machine)
-- Last updated: 2026-11-16 — Steps 1–8 + 10 + 11 + 12 + 13 complete. **Step 11 (Bomb Race) is merged into `main` as PR #1** (`origin/main` = `27414af`). **Steps 12–13 (Approximation / rounding)** on branch `approximation`: new 5th operation `round` (symbol `≈`, whole numbers only, targets ten/hundred/thousand) in Level, Adaptive and Timed/mixed modes, plus a second bomb race — the **Approximation Bomb Race** ("Bomba de Redondeo"): 10 progressive rounding quests sharing the per-profile `bombTime`. The original race is now named "Multiplication Bomb Race" / "Bomba de Multiplicaciones". 265 smoke assertions pass. Remaining: push `approximation` when asked; build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5).
+- Last updated: 2026-11-16 — Steps 1–8 + 10 + 11 + 12 + 13 complete. **Step 11 (Bomb Race) is merged into `main` as PR #1** (`origin/main` = `27414af`). **Steps 12–13 (Approximation / rounding)** on branch `approximation`: new 5th operation `round` (symbol `≈`, whole numbers only, targets ten/hundred/thousand) in Level, Adaptive and Timed/mixed modes, plus a second bomb race — the **Approximation Bomb Race** ("Bomba de Redondeo"): 10 progressive rounding quests sharing the per-profile `bombTime`. The original race is now named "Multiplication Bomb Race" / "Bomba de Multiplicaciones". 265 smoke assertions pass. Branch pushed and opened as **PR #2** (awaiting merge). Remaining: merge PR #2 when approved; build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5).
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -272,7 +272,7 @@ Notes (Step 9):
 - [x] CSS: `.round-hint` (1.05rem, `--text-muted`, centered) above the question
 - [x] Test: smoke.mjs approximation section — per-level generator invariants for all 5 levels (target / range / non-multiple / ties-up recompute / answer ≤ 9999), L5 actually draws all three targets, a round of 10 unique rounding questions, profile defaults `stats.round` + `adaptiveLevel.round`, the 3 instruction keys present in EN **and** ES, level-mode flow (≈ button on setup, hint + `≈ ?` render, answered via keypad from `peek().question.answer`, 10/10 results, stats + points recorded), ≈ button on adaptive and timed pickers. 219 assertions pass
 - [x] SW cache bumped to `mates-v5` (no new assets)
-- [x] `git commit` (branch `approximation`, unpushed — push when asked)
+- [x] `git commit` (branch `approximation`; pushed — PR #2, awaiting merge)
 
 ### Step 13 — Approximation Bomb Race ("Bomba de Redondeo") ✅
 - [x] Quest table (`questions.js`): `ROUND_QUEST_LEVELS` — 10 progressive quests, each one spec `{ target, min, max }` or a list of specs picked at random (mixed quests); ranges capped so answers fit the 4-digit keypad; `genRoundQuest(level)` reuses the non-multiple do-while + ties-up rule from `genRound`; `roundQuestQuestions(level)` — ten questions, unique while the value space allows (L1's nine single digits fill the last slot with a repeat after the 500-attempt guard), Fisher-Yates shuffled
@@ -284,7 +284,7 @@ Notes (Step 9):
 - [x] Bug fixed while testing: top-level `function` declarations in classic scripts are global bindings — bomb-round.js's first helpers `race()`/`nodeState()` shadowed bomb.js's same-named ones, so the multiplication map rendered from `.bombRound` state. Renamed to `roundRace()` / `roundNodeState()` (see Corrections)
 - [x] Test: smoke.mjs step 13 — quest L1 = values 1–9 → ten (one repeat allowed), shared bombTime honored, failure unlocks the next quest, +50 first-clear bonus only, stats.round fed by the race. 265 assertions pass
 - [x] SW cache bumped to `mates-v6`
-- [x] `git commit` (branch `approximation`, unpushed — push when asked)
+- [x] `git commit` (branch `approximation`; pushed — PR #2, awaiting merge)
 
 ---
 

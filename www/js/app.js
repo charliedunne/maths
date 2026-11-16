@@ -292,13 +292,18 @@ Mates.screens = Object.assign(Mates.screens || {}, {
       '</div>' +
 
       partRow('face', 'builder.face', 3) +
-      partRow('hair', 'builder.hair', 6) +
+      partRow('hair', 'builder.hair', 10) +
       '<div class="option-row">' +
         '<div class="setting-label">' + Mates.t('builder.hairColor') + '</div>' +
         '<div class="option-options">' + swatches + '</div>' +
       '</div>' +
       partRow('eyes', 'builder.eyes', 3) +
       partRow('mouth', 'builder.mouth', 3) +
+      partRow('glasses', 'builder.glasses', 5) +
+      partRow('hat', 'builder.hat', 5) +
+      partRow('hairpin', 'builder.hairpin', 5) +
+      partRow('earrings', 'builder.earrings', 3) +
+      partRow('freckles', 'builder.freckles', 2) +
 
       '<button class="btn btn-ghost" data-action="builderSurprise">🎲 ' + Mates.t('builder.surprise') + '</button>' +
       '<button class="btn btn-primary" data-action="builderSave">' + Mates.t('builder.save') + '</button>';

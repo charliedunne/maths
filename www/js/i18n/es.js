@@ -111,6 +111,11 @@ window.I18N.es = {
   'builder.hairColor': 'Color de pelo',
   'builder.eyes': 'Ojos',
   'builder.mouth': 'Boca',
+  'builder.glasses': 'Gafas',
+  'builder.hat': 'Gorro',
+  'builder.hairpin': 'Accesorio de pelo',
+  'builder.earrings': 'Pendientes',
+  'builder.freckles': 'Lunares',
   'builder.surprise': '¡Sorpréndeme!',
   'builder.save': 'Empezar a jugar',
 

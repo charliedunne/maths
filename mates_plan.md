@@ -7,8 +7,8 @@
 4. When all boxes of a step are done: mark them `[x]`, update **Current status**, and `git commit` (user=charliedunne, email=charlie.dunne@gmail.com).
 
 ## Current status
-- Step in progress: **Step 15 — Avatar variability expansion** (branch `cosmetic-improvement`, off `main` = `601bd05`)
-- Last updated: 2026-11-16 — Steps 1–8 + 10–13 complete and merged into `main`; **Step 14 (cozy pastel refresh)** done on branch `cosmetic-improvement`: cream-pink/peach/lavender/mint light palette, deep plum-navy dark palette, rounded type, layered dot+glow background, pill gradient buttons with press-squash, top-light cards, 3D keypad, sparkle/badge/hover micro-animations, full pastel icon set re-rendered (PWA + Android adaptive), SW `mates-v7`. Next: **Step 15** (avatar variability: glasses, hats, hairpins, earrings, freckles + more hair styles/colors). 265 smoke assertions pass. Remaining: finish Step 15; build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5).
+- All planned steps done on branch `cosmetic-improvement` (off `main` = `601bd05`). Nothing in progress.
+- Last updated: 2026-11-16 — Steps 1–8 + 10–13 merged into `main`. On branch `cosmetic-improvement`: **Step 14 (cozy pastel refresh)** — cream-pink/peach/lavender/mint light palette, deep plum-navy dark palette, rounded type, layered dot+glow background, pill gradient buttons with press-squash, top-light cards, 3D keypad, sparkle/badge/hover micro-animations, full pastel icon set re-rendered (PWA + Android adaptive). **Step 15 (avatar variability)** — new slots glasses/hat/hairpin/earrings/freckles, hair 6→10 styles, skin 6→8, hairColor 7→10, read-time avatar merge for old profiles, five new builder rows, EN/ES labels, SW `mates-v8`. 275 smoke assertions pass. Remaining: build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5); branch not yet pushed/PR'd.
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -299,14 +299,14 @@ Notes (Step 9):
 - [x] `git commit`
 
 ### Step 15 — Avatar variability expansion
-- [ ] New avatar slots + SVG parts: `glasses` (none · round · heart sunglasses · cat-eye · star shades), `hat` (none · beanie · party hat · beret · princess crown), `hairpin` (none · bow · flower crown · butterfly clip · star clip), `earrings` (none · hoops · hearts), `freckles` (none · freckles)
-- [ ] Hair: + ponytail, space buns, braids, wavy long → 10 styles; skin 6→8 tones; hairColor 7→10 (+ lilac, mint, orange, silver/platinum)
-- [ ] Storage: read-time merge for old profiles (new slots default 0) — same pattern as `bombRound`
-- [ ] Builder UI: five new option rows with live mini-avatar thumbnails; "Surprise me" randomizes the new parts too
-- [ ] i18n EN + ES for all new part labels
-- [ ] Test: SVG bounds across all new parts × combos (incl. hat-over-hair layering), builder flow with the new rows, old-profile merge regression
-- [ ] SW cache bumped to `mates-v8`
-- [ ] `git commit`
+- [x] New avatar slots + SVG parts: `glasses` (none · round · heart sunglasses · cat-eye · star shades), `hat` (none · beanie · party hat · beret · princess crown), `hairpin` (none · bow · flower crown · butterfly clip · star clip), `earrings` (none · hoops · hearts), `freckles` (none · freckles)
+- [x] Hair: + ponytail, space buns, braids, wavy long → 10 styles; skin 6→8 tones; hairColor 7→10 (+ lilac, mint, orange; existing grey serves as silver/platinum)
+- [x] Storage: read-time merge for old profiles (new slots default 0) — same pattern as `bombRound`
+- [x] Builder UI: five new option rows with live mini-avatar thumbnails; "Surprise me" randomizes the new parts too
+- [x] i18n EN + ES for all new part labels
+- [x] Test: SVG bounds across all new parts × combos (incl. hat-over-hair layering), builder flow with the new rows, old-profile merge regression — 275 assertions pass
+- [x] SW cache bumped to `mates-v8`
+- [x] `git commit`
 
 ---
 

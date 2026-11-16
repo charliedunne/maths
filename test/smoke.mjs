@@ -118,9 +118,18 @@ check('welcome start button present', page.appEl.innerHTML.includes('data-action
 /* Welcome -> builder -> first profile */
 page.appEl.click({ dataset: { action: 'welcomeStart' } });
 check('builder screen rendered (EN)', page.appEl.innerHTML.includes('New profile</h1>'));
+check('builder shows accessory rows',
+  page.appEl.innerHTML.includes('>Glasses<') && page.appEl.innerHTML.includes('>Hat<') &&
+  page.appEl.innerHTML.includes('>Hair accessory<') && page.appEl.innerHTML.includes('>Earrings<') &&
+  page.appEl.innerHTML.includes('>Freckles<'));
 page.appEl.click({ dataset: { action: 'builderSurprise' } });
 page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hair', value: '3' } });
 page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hairColor', value: '6' } });
+page.appEl.click({ dataset: { action: 'builderSetPart', part: 'glasses', value: '4' } });
+page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hat', value: '2' } });
+page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hairpin', value: '1' } });
+page.appEl.click({ dataset: { action: 'builderSetPart', part: 'earrings', value: '2' } });
+page.appEl.click({ dataset: { action: 'builderSetPart', part: 'freckles', value: '1' } });
 page.appEl.input('Luna');
 page.appEl.click({ dataset: { action: 'builderSave' } });
 check('home screen greets Luna (EN)', page.appEl.innerHTML.includes('Hi, Luna!'));
@@ -128,6 +137,10 @@ check('home screen greets Luna (EN)', page.appEl.innerHTML.includes('Hi, Luna!')
 let profiles = page.ctx.Mates.profiles.list();
 check('one profile created', profiles.length === 1 && profiles[0].name === 'Luna');
 check('avatar config persisted', profiles[0].avatar.hair === 3 && profiles[0].avatar.hairColor === 6);
+check('accessory slots persisted',
+  profiles[0].avatar.glasses === 4 && profiles[0].avatar.hat === 2 &&
+  profiles[0].avatar.hairpin === 1 && profiles[0].avatar.earrings === 2 &&
+  profiles[0].avatar.freckles === 1);
 check('profile data initialized', page.ctx.Mates.profileData.get(profiles[0].id).points === 0);
 
 /* Settings dance from the profiles screen */
@@ -170,8 +183,80 @@ check('renderAvatar returns svg', av.render(av.DEFAULT, 48).includes('<svg'));
 check('renderAvatar sizes', av.render(av.DEFAULT, 160).includes('width="160"'));
 check('random config in bounds', (() => {
   const r = av.random();
-  return r.face < 3 && r.skin < 6 && r.hair < 6 && r.hairColor < 7 && r.eyes < 3 && r.mouth < 3;
+  return r.face < 3 && r.skin < 8 && r.hair < 10 && r.hairColor < 10 &&
+    r.eyes < 3 && r.mouth < 3 && r.glasses < 5 && r.hat < 5 &&
+    r.hairpin < 5 && r.earrings < 3 && r.freckles < 2;
 })());
+
+/* ---------- Step 15: avatar variability expansion ---------- */
+console.log('step 15 (avatar parts, bounds, layering, legacy merge)');
+{
+  const A = page.ctx.Mates.avatar;
+  /* Every geometric number in a size-100 render must lie within the
+   * 100x100 viewBox (colors and URLs are stripped before scanning). */
+  const inBounds = function (svg) {
+    const stripped = svg.replace(/#[0-9a-f]{3,8}/gi, '').replace(/https?:\/\/[^"]*/g, '');
+    for (const m of stripped.matchAll(/-?\d+(?:\.\d+)?/g)) {
+      const n = Number(m[0]);
+      if (n < 0 || n > 100) return false;
+    }
+    return true;
+  };
+
+  /* Every accessory combo (5x5x5x3x2 = 750 renders) stays in bounds. */
+  const base = { face: 0, skin: 1, hair: 3, hairColor: 1, eyes: 0, mouth: 0 };
+  let allParts = true;
+  for (let g = 0; g < 5 && allParts; g++) for (let h = 0; h < 5 && allParts; h++)
+    for (let p = 0; p < 5 && allParts; p++) for (let e = 0; e < 3 && allParts; e++)
+      for (let f = 0; f < 2 && allParts; f++) {
+        const cfg = Object.assign({}, base, { glasses: g, hat: h, hairpin: p, earrings: e, freckles: f });
+        if (!inBounds(A.render(cfg, 100))) allParts = false;
+      }
+  check('all accessory combos within viewBox', allParts);
+
+  /* Hat-over-hair layering: hat markup must come after the front hair. */
+  let layered = true;
+  for (let hair = 1; hair < 10 && layered; hair++) {
+    const svg = A.render(Object.assign({}, base, { hair: hair, hat: 1 }), 100);
+    const frontMarker = hair === 2 ? 'cx="26" cy="44"' : 'M 18 52 Q 18 20';
+    const frontIdx = svg.indexOf(frontMarker);
+    const hatIdx = svg.indexOf('y="35"'); /* beanie band */
+    if (frontIdx === -1 || hatIdx === -1 || hatIdx < frontIdx) layered = false;
+  }
+  check('hat renders above front hair for all styles', layered);
+
+  /* All ten hair styles and eight skin tones render in bounds. */
+  let hairOk = true, skinOk = true;
+  for (let h = 0; h < 10 && hairOk; h++) if (!inBounds(A.render(Object.assign({}, base, { hair: h }), 100))) hairOk = false;
+  for (let s = 0; s < 8 && skinOk; s++) if (!inBounds(A.render(Object.assign({}, base, { skin: s }), 100))) skinOk = false;
+  check('all 10 hair styles in bounds', hairOk);
+  check('all 8 skin tones in bounds', skinOk);
+
+  /* random() stays within the expanded ranges. */
+  let rndOk = true;
+  for (let i = 0; i < 200 && rndOk; i++) {
+    const r = A.random();
+    if (r.face > 2 || r.skin > 7 || r.hair > 9 || r.hairColor > 9 ||
+        r.eyes > 2 || r.mouth > 2 || r.glasses > 4 || r.hat > 4 ||
+        r.hairpin > 4 || r.earrings > 2 || r.freckles > 1) rndOk = false;
+  }
+  check('random() in expanded bounds (200 draws)', rndOk);
+
+  /* Legacy profile (no accessory slots) merges to defaults on read. */
+  const savedProfiles = store.get('mates.profiles');
+  const legacy = { id: 'pLegacy', name: 'Oldie',
+    avatar: { face: 1, skin: 2, hair: 4, hairColor: 3, eyes: 1, mouth: 2 },
+    createdAt: '2026-01-01T00:00:00Z' };
+  store.set('mates.profiles', JSON.stringify([legacy]));
+  const merged = page.ctx.Mates.profiles.list()[0].avatar;
+  check('legacy avatar merges new slots to 0',
+    merged.glasses === 0 && merged.hat === 0 && merged.hairpin === 0 &&
+    merged.earrings === 0 && merged.freckles === 0);
+  check('legacy avatar keeps old values', merged.face === 1 && merged.hair === 4 && merged.mouth === 2);
+  check('legacy avatar renders in bounds', inBounds(A.render(merged, 100)));
+  if (savedProfiles !== undefined) store.set('mates.profiles', savedProfiles);
+  else store.delete('mates.profiles');
+}
 
 /* Profiles screen: Luna card (created during onboarding) + add card */
 page.appEl.click({ dataset: { action: 'backToProfiles' } });

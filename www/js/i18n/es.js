@@ -59,6 +59,13 @@ window.I18N.es = {
   'timed.goalLine': 'Objetivo: {n} aciertos en {t} s',
   'timed.bestTime': 'Mejor tiempo: {n} s',
 
+  'home.mode.bomb': 'Camino de la bomba',
+  'bomb.title': 'Camino de la bomba',
+  'bomb.time': 'Tiempo de la bomba (s)',
+  'bomb.hint': 'Responde las 10 preguntas antes de que explote la bomba. ¡Cada misión desbloquea la siguiente!',
+  'bomb.fail': '💥 ¡La bomba explotó! Conseguiste {got} de 10',
+  'bomb.allDone': '¡Escapaste de las 20 misiones! Eres un campeón desactivando bombas',
+
   'level.title': 'Elige un nivel',
   'level.operation': 'Operación',
   'level.level': 'Nivel',

@@ -129,7 +129,9 @@ function profileDataDefaults() {
     highScores: {},         // legacy count-based timed records (no longer written)
     adaptiveLevel: { add: 2, sub: 2, mul: 2, div: 2 },
     timedGoal: { target: 8, time: 45 }, // goal-based challenge: N correct in T seconds
-    timedBest: {}           // fastest times (seconds) to reach the goal, keyed like 'mul.3' or 'mixed'
+    timedBest: {},           // fastest times (seconds) to reach the goal, keyed like 'mul.3' or 'mixed'
+    bombTime: 60,            // Bomb Race countdown per quest (seconds)
+    bombRace: { frontier: 0, completed: [] } // attempted quests are always 1..frontier
   };
 }
 
@@ -154,6 +156,22 @@ Mates.timedGoal = {
   }
 };
 
+/* ---------- Bomb Race quest time (per profile) ---------- */
+Mates.bombTime = {
+  DEFAULT: 60, MIN: 20, MAX: 300, STEP: 5,
+  /** Clamp a bomb-time value into its allowed range (20–300 s). */
+  clamp: function (value) {
+    const v = Math.round(Number(value));
+    if (!isFinite(v)) return this.DEFAULT;
+    return Math.min(this.MAX, Math.max(this.MIN, v));
+  },
+  /** A profile's bomb time in seconds (safe default on missing/corrupt data). */
+  get: function (profileId) {
+    const d = Mates.profileData.get(profileId || Mates.state.profileId);
+    return this.clamp(d.bombTime);
+  }
+};
+
 Mates.profileData = {
   /** Load a profile's data with defaults merged in (safe for new profiles). */
   get: function (id) {
@@ -166,6 +184,8 @@ Mates.profileData = {
     d.adaptiveLevel = Object.assign({ add: 2, sub: 2, mul: 2, div: 2 }, saved.adaptiveLevel);
     d.timedGoal = Object.assign({ target: 8, time: 45 }, saved.timedGoal);
     d.timedBest = Object.assign({}, saved.timedBest);
+    d.bombTime = Mates.bombTime.clamp(saved.bombTime);
+    d.bombRace = Object.assign({ frontier: 0, completed: [] }, saved.bombRace);
     // Migration: drop obsolete count-based 'timed.*' high-score keys on read.
     Object.keys(d.highScores).forEach(function (k) {
       if (k.indexOf('timed.') === 0) delete d.highScores[k];

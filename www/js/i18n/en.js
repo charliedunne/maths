@@ -59,6 +59,13 @@ window.I18N.en = {
   'timed.goalLine': 'Goal: {n} correct in {t} s',
   'timed.bestTime': 'Best time: {n} s',
 
+  'home.mode.bomb': 'Bomb Race',
+  'bomb.title': 'Bomb Race',
+  'bomb.time': 'Bomb time (s)',
+  'bomb.hint': 'Answer all 10 questions before the bomb explodes. Each quest unlocks the next one!',
+  'bomb.fail': '💥 The bomb exploded! You got {got} of 10',
+  'bomb.allDone': 'You escaped all 20 quests — a true bomb-defusing champion!',
+
   'level.title': 'Pick a level',
   'level.operation': 'Operation',
   'level.level': 'Level',

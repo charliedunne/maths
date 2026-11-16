@@ -8,7 +8,7 @@
 
 ## Current status
 - Step in progress: **Step 9 — Capacitor → Android APK** (only box 5 left: debug APK build, blocked on this machine)
-- Last updated: 2026-11-15 — Steps 1–8 complete; Step 10 (goal-based timed challenge) complete: per-profile goal editor (⚙ steppers), early end on success/failure + Try again, fastest-time records (`timedBest`), +20 success bonus, speed-demon redefined to "complete a level-5 challenge". 162 smoke assertions pass. Remaining: build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5).
+- Last updated: 2026-11-15 — Steps 1–8 + 10 complete; **Step 11 (Bomb Race / "Camino de la bomba") complete** on branch `bomb-race`: 20-quest winding map (two per table, ordered then shuffled), one countdown per quest (per-profile `bombTime`, default 60 s, editable 20–300 s via a third ⚙ stepper row), sequential unlock (attempt = pass or fail), +50 first-clear bonus only, 💣/💥 banners. 201 smoke assertions pass. Remaining: push `bomb-race` when asked; build the debug APK on a machine with Java 17 + Android SDK (Step 9 box 5).
 
 ### Corrections made while working
 - **Router design**: instead of static screen containers in `index.html`, the app uses a render-on-demand router (`Mates.screens` = map of render functions; `Mates.router.go(name)` swaps `#app` innerHTML). Simpler, and language/theme re-render is just `router.refresh()`. All clicks go through one delegated listener on `[data-action]` elements.
@@ -20,7 +20,7 @@
 ---
 
 ## 1. Spec summary
-Web app for primary-school maths practice (ages 5–11). **Arithmetic only**: addition, subtraction, multiplication, division. Three practice modes: fixed levels, adaptive difficulty, timed challenges. Installable PWA, fully offline, no backend — named local profiles in `localStorage`. Bilingual **EN/ES**, user-selectable **light/dark** cozy themes, layered-SVG **avatar builder** (face, skin, hair, hair color, eyes, mouth). Gamification: points, daily streaks, badges, local leaderboard between profiles on the same device. Later: Android APK via Capacitor.
+Web app for primary-school maths practice (ages 5–11). **Arithmetic only**: addition, subtraction, multiplication, division. Four practice modes: fixed levels, adaptive difficulty, goal-based timed challenges, and Bomb Race. Installable PWA, fully offline, no backend — named local profiles in `localStorage`. Bilingual **EN/ES**, user-selectable **light/dark** cozy themes, layered-SVG **avatar builder** (face, skin, hair, hair color, eyes, mouth). Gamification: points, daily streaks, badges, local leaderboard between profiles on the same device. Later: Android APK via Capacitor.
 
 ## 2. Key decisions & conventions (read before coding)
 - **Stack**: vanilla JS + HTML/CSS only. No build step, no dependencies, no framework.
@@ -46,6 +46,9 @@ Start at the profile's saved level for that operation (default 2). Step **up** a
 
 ### Timed challenge (goal-based, Step 10)
 Reach **N correct within T seconds**. N and T are a per-profile goal (`timedGoal: { target, time }`, default 8 / 45 s), editable on the `profileSettings` screen via +/− steppers (⚙ button on each profile card; steps ±1 target / ±5 s time; limits target 1–30, time 10–300 s). Pick operation + level, or "mixed" (all four operations at fixed level 2) — the goal applies to all. Instant confirm per answer, auto-advance — no delay, so a quick ✓/✗ pop (`#roundFlash`, 500 ms CSS animation on the round card) is the visual right/wrong indication alongside the sound. Wrong answers have no penalty. The round ends early when the target is reached (success → 🎉 banner + elapsed time + fastest-time record; failure at 0 s below target → encouraging message + Try again). Points = score × 10, plus a +20 success bonus. Best time per key (`timedBest`, seconds, lower is better, success only) replaces the old count-based high scores — obsolete `timed.*` keys are stripped by a read-time migration in `profileData.get()`.
+
+### Bomb Race ("Camino de la bomba", Step 11)
+A winding map of **20 quests** — two per multiplication table (1–10), in a fixed sequence: for table `t`, quest `2t−1` runs the ordered pairs `t×1…t×10` and quest `2t` runs the same ten pairs shuffled (Fisher-Yates). Each quest is one round of those ten questions with a single countdown for the whole quest (`bombTime`, per profile, default 60 s; editable on `profileSettings` via a third stepper row, ±5 s, clamped 20–300 s). Success = all 10 answered before the clock hits 0 (wrong answers allowed, score shown); failure = timeout → 💥 banner. Sequential unlock: attempting quest N — pass **or** fail — unlocks N+1; every unlocked quest stays tappable for retry/replay; the map highlights "next mission" = first unlocked-not-completed node (pulsing). Rewards: usual 10 pts/correct + **+50 flat bonus on first completion only** (replays earn no bonus); no fastest-time records, no new badge. Map layout: boustrophedon 4×5 grid with dashed links; node states done ✓ / next (pulse) / failed 💥 / locked 🔒 (disabled).
 
 ### Badges
 | id | Condition |
@@ -224,6 +227,19 @@ Notes (Step 9):
 - [x] Test: smoke.mjs step 5 rewritten — goal editor flow + clamps, migration, early success end + bonus + record line, slower-success path, failure + retry path, mixed mode with goal, home best-times card; speed-demon now tested via an L5 success. 162 assertions pass
 - [x] SW cache bumped to `mates-v3`
 - [x] `git commit`
+
+### Step 11 — Bomb Race ("Camino de la bomba") ✅
+- [x] Quest model (`js/modes/bomb.js`): `Mates.bombQuest` — 20 quests; `info(id)` → table = ⌈id/2⌉, shuffled when even; `questions(id)` → the ten pairs, Fisher-Yates shuffle for even ids
+- [x] Storage (`storage.js`): per-profile `bombTime: 60` + `bombRace: { frontier: 0, completed: [] }`; `Mates.bombTime` helper (clamp 20–300 / get); clamped on read in `profileData.get()`
+- [x] Round engine (`round.js`): bomb cfg path — 💣 clock icon, one countdown for the whole quest, success = all 10 answered before 0; results carry `bomb`, `total` and `elapsed`; results screen: 🎉 win banner (with elapsed time) / 💥 lose banner ("got X of 10"), score line "X / 10", failure retry restarts the same quest with a fresh countdown; continue returns to the map
+- [x] Map screen (`bombMap`): boustrophedon 4×5 grid with dashed links and row-end turns; node states done ✓ / next (pulsing) / failed 💥 / locked 🔒 (disabled); progress chip "done / 20"; all-done celebration; home mode card (💣)
+- [x] Record (`recordBombQuest`): `Mates.progress.record(res)` FIRST (score×10 points + mul stats feed table-master), then re-read profile data — frontier advances on any attempt, completed push + +50 bonus on first success only; sharp-shooter badge excludes bomb rounds
+- [x] Profile settings: third stepper row for bomb time (±5 s, 20–300 s, self-disabling at limits)
+- [x] i18n EN + ES complete (`home.mode.bomb`, `bomb.title/time/hint/fail/allDone`)
+- [x] CSS: map grid, dashed links/turns, node states + pulse animation, celebration banner
+- [x] Test: smoke.mjs step 11 — map render/lock/unlock, ordered quest 1, shuffled quest 2 (same ten pairs), success path (banner / elapsed / "10 / 10" / +50 bonus / points), failure path (💥 banner, "4 / 10", no bonus, retry with fresh countdown, frontier still advances), replay without bonus, bomb-time stepper + clamps + new quest uses configured time. 201 assertions pass
+- [x] SW cache bumped to `mates-v4`
+- [x] `git commit` (branch `bomb-race`, local only — push when asked)
 
 ---
 

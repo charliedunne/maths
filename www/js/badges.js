@@ -10,7 +10,7 @@ Mates.badges = (function () {
     { id: 'first-steps', icon: '👣', nameKey: 'badge.first-steps.name', descKey: 'badge.first-steps.desc',
       check: function (d, res) { return !!res; } },
     { id: 'sharp-shooter', icon: '🎯', nameKey: 'badge.sharp-shooter.name', descKey: 'badge.sharp-shooter.desc',
-      check: function (d, res) { return !!res && !res.timed && !res.adaptive && res.count === 10 && res.score === 10; } },
+      check: function (d, res) { return !!res && !res.timed && !res.adaptive && !res.bomb && res.count === 10 && res.score === 10; } },
     { id: 'speed-demon', icon: '⚡', nameKey: 'badge.speed-demon.name', descKey: 'badge.speed-demon.desc',
       check: function (d, res) { return !!res && res.timed && res.success && res.level === 5; } },
     { id: 'table-master', icon: '✖️', nameKey: 'badge.table-master.name', descKey: 'badge.table-master.desc',

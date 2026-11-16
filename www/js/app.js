@@ -53,9 +53,10 @@ Mates.screens = Object.assign(Mates.screens || {}, {
     return '' +
       '<div class="card welcome-card">' +
         '<svg viewBox="0 0 512 512" width="120" height="120" aria-hidden="true">' +
-          '<rect width="512" height="512" rx="112" fill="#ef7d54"/>' +
-          '<path d="M 138 366 L 138 196 L 256 300 L 374 196 L 374 366" fill="none" stroke="#fffdf9" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/>' +
-          '<circle cx="398" cy="140" r="30" fill="#3aa6a0"/>' +
+          '<rect width="512" height="512" rx="112" fill="#f6b8d4"/>' +
+          '<path d="M 138 366 L 138 196 L 256 300 L 374 196 L 374 366" fill="none" stroke="#fffafd" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '<circle cx="398" cy="140" r="30" fill="#9b8cd9"/>' +
+          '<path d="M 120 80 L 130 110 L 160 120 L 130 130 L 120 160 L 110 130 L 80 120 L 110 110 Z" fill="#fffafd"/>' +
         '</svg>' +
         '<h1 class="welcome-title">' + Mates.t('app.name') + '</h1>' +
         '<p class="welcome-tagline">' + Mates.t('welcome.tagline') + '</p>' +

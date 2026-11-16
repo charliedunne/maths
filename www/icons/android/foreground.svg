@@ -1,13 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- Adaptive-icon FOREGROUND layer: transparent background.
-       The M + teal dot are scaled (0.70, about the canvas centre) so the
-       outermost ink stays inside the 66dp safe zone of the 108dp canvas,
-       i.e. it survives any launcher mask (circle/squircle/teardrop).
+       The M + lavender dot + sparkle are scaled (0.70, about the canvas
+       centre) so the outermost ink stays inside the 66dp safe zone of the
+       108dp canvas, i.e. it survives any launcher mask (circle/squircle/teardrop).
        Render at 108dp x density: mdpi=108 hdpi=162 xhdpi=216 xxhdpi=324 xxxhdpi=432. -->
   <g transform="translate(256 256) scale(0.70) translate(-256 -256)">
     <path d="M 138 366 L 138 196 L 256 300 L 374 196 L 374 366"
-          fill="none" stroke="#fffdf9" stroke-width="58"
+          fill="none" stroke="#fffafd" stroke-width="58"
           stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="398" cy="140" r="30" fill="#3aa6a0"/>
+    <circle cx="398" cy="140" r="30" fill="#9b8cd9"/>
+    <path d="M 120 80 L 130 110 L 160 120 L 130 130 L 120 160 L 110 130 L 80 120 L 110 110 Z" fill="#fffafd"/>
   </g>
 </svg>

@@ -5,51 +5,63 @@
    light/dark themes only swap values.
    ============================================================ */
 
-/* ---------- Design tokens: light (default) ---------- */
+/* ---------- Design tokens: light (cozy pastel blush) ---------- */
 :root {
-  --bg: #fdf3e7;            /* warm cream */
-  --surface: #fffdf9;       /* card background */
-  --surface-2: #f6e8d6;     /* inset / segmented control track */
-  --text: #4a3b2f;          /* warm dark brown */
-  --text-muted: #97846f;
-  --primary: #ef7d54;       /* terracotta coral */
-  --primary-soft: #fbe0d4;
+  --bg: #fdf0f5;            /* cream-pink base */
+  --bg-glow: rgba(246, 184, 212, 0.35);  /* soft pink glow at the top */
+  --dot: rgba(179, 161, 236, 0.28);      /* faint lavender dot pattern */
+  --surface: #fff6fa;       /* card background */
+  --surface-hi: #ffffff;    /* top of the card gradient (lighter) */
+  --surface-2: #f9e4ee;     /* inset / segmented control track */
+  --text: #5b4157;          /* warm plum-brown */
+  --text-muted: #a3899f;
+  --primary: #e96b9f;       /* rose */
+  --primary-hi: #f7a98b;    /* peach — top of the button gradient, fades into rose */
+  --primary-soft: #fbe0ec;
   --primary-text: #ffffff;
-  --accent: #3aa6a0;        /* teal */
-  --accent-soft: #d8efed;
-  --success: #69a84f;
-  --success-soft: #e2efd8;
-  --warning: #e2b13c;
-  --danger-soft: #d98880;   /* muted rose, never harsh red */
-  --border: #eadbc8;
-  --shadow: 0 4px 16px rgba(120, 90, 50, 0.12);
-  --shadow-soft: 0 2px 8px rgba(120, 90, 50, 0.08);
+  --primary-glow: rgba(233, 107, 159, 0.35);
+  --accent: #9b8cd9;        /* lavender */
+  --accent-soft: #e9e3f7;
+  --success: #4fae83;       /* mint */
+  --success-soft: #ddf2e7;
+  --warning: #eec25e;       /* soft gold */
+  --danger-soft: #d97f86;   /* muted coral, never harsh red */
+  --border: #f0d9e6;
+  --key-edge: #e3c4d6;      /* hard "edge" under keypad keys (3D press) */
+  --shadow: 0 6px 18px rgba(200, 130, 170, 0.16);
+  --shadow-soft: 0 3px 10px rgba(200, 130, 170, 0.12);
 
   --radius-lg: 24px;
-  --radius-md: 16px;
-  --radius-sm: 10px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
   --tap: 52px;              /* minimum touch target */
 }
 
-/* ---------- Design tokens: dark (cozy deep plum) ---------- */
+/* ---------- Design tokens: dark (deep plum-navy, warm rose & gold) ---------- */
 [data-theme="dark"] {
-  --bg: #262230;
-  --surface: #322d40;
-  --surface-2: #3b3550;
-  --text: #f2ece1;
-  --text-muted: #a79db8;
-  --primary: #ef7d54;
-  --primary-soft: #4a3040;
+  --bg: #241f33;            /* deep plum-navy, never pure black */
+  --bg-glow: rgba(240, 150, 180, 0.12);
+  --dot: rgba(190, 165, 225, 0.14);
+  --surface: #2f2942;
+  --surface-hi: #372f4d;
+  --surface-2: #3a3352;
+  --text: #f6ecf3;          /* soft cream-pink, never pure white */
+  --text-muted: #ab9cb8;
+  --primary: #ef8ab5;       /* warm rose (brighter on dark) */
+  --primary-hi: #f5ab8e;    /* peach top of the button gradient */
+  --primary-soft: #4a3050;
   --primary-text: #ffffff;
-  --accent: #4fc3bc;
-  --accent-soft: #2c4a48;
-  --success: #8bc34a;
-  --success-soft: #37452c;
-  --warning: #e2b13c;
-  --danger-soft: #d98880;
-  --border: #453e5c;
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --primary-glow: rgba(239, 138, 181, 0.28);
+  --accent: #b3a1ec;
+  --accent-soft: #3d3560;
+  --success: #6cc9a0;
+  --success-soft: #2e4a3c;
+  --warning: #f0c464;       /* warm gold */
+  --danger-soft: #e08b95;
+  --border: #4a4163;
+  --key-edge: #1d1930;
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --shadow-soft: 0 3px 10px rgba(0, 0, 0, 0.25);
 }
 
 /* ---------- Base ---------- */
@@ -65,10 +77,18 @@ html, body {
 }
 
 body {
-  font-family: "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
-  background: var(--bg);
+  /* Rounded system stack first — no webfonts, stays fully offline. */
+  font-family: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN",
+               Nunito, "Segoe UI", system-ui, -apple-system, sans-serif;
+  background-color: var(--bg);
+  /* Faint dot pattern + soft radial glow instead of a flat color. */
+  background-image:
+    radial-gradient(var(--dot) 1.6px, transparent 1.7px),
+    radial-gradient(ellipse 90% 55% at 50% -12%, var(--bg-glow), transparent 75%);
+  background-size: 30px 30px, 100% 100%;
+  background-attachment: fixed;
   color: var(--text);
-  font-size: 18px;
+  font-size: 19px;
   line-height: 1.45;
   transition: background-color 0.25s ease, color 0.25s ease;
 }
@@ -87,7 +107,7 @@ body {
   flex-direction: column;
   gap: 20px;
   flex: 1;
-  animation: screen-in 0.25s ease;
+  animation: screen-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes screen-in {
@@ -141,31 +161,33 @@ body {
 
 /* ---------- Cards ---------- */
 .card {
-  background: var(--surface);
+  /* Top-light gradient: cards feel softly lit from above. */
+  background: linear-gradient(180deg, var(--surface-hi), var(--surface));
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   padding: 20px;
 }
 
-/* ---------- Buttons ---------- */
+/* ---------- Buttons (pill shape, soft gradients) ---------- */
 .btn {
   min-height: var(--tap);
-  padding: 10px 24px;
+  padding: 10px 28px;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: 999px;
   font-family: inherit;
   font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.1s ease, filter 0.15s ease;
+  transition: transform 0.1s ease, filter 0.15s ease, box-shadow 0.15s ease;
 }
 
-.btn:active { transform: scale(0.97); }
+/* Press-squash: a quick satisfying "squish" on tap. */
+.btn:active { transform: scale(0.94) translateY(1px); }
 
 .btn-primary {
-  background: var(--primary);
+  background: linear-gradient(180deg, var(--primary-hi), var(--primary));
   color: var(--primary-text);
-  box-shadow: var(--shadow-soft);
+  box-shadow: 0 4px 14px var(--primary-glow);
 }
 
 .btn-primary:hover { filter: brightness(1.05); }
@@ -430,6 +452,14 @@ body {
   font-size: 1.25rem;
   text-align: left;
   padding: 16px 24px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+/* Gentle lift on hover (desktop / pointer devices). */
+.mode-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px var(--primary-glow);
+  filter: brightness(1.03);
 }
 
 .home-hello { margin: 0; font-weight: 700; }
@@ -500,11 +530,20 @@ body {
 }
 
 .badge-earned {
-  background: var(--warning);
+  background: linear-gradient(180deg, #f6d98a, var(--warning));
   color: #4a3b2f;
   font-weight: 800;
   border-radius: 999px;
   padding: 6px 14px;
+  box-shadow: 0 3px 10px rgba(238, 194, 94, 0.4);
+  /* Freshly earned badges pop in with a springy overshoot. */
+  animation: badgePop 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes badgePop {
+  0%   { transform: scale(0); opacity: 0; }
+  70%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* ---------- Round screen ---------- */
@@ -570,8 +609,36 @@ body {
   font-weight: 800;
 }
 
-.fb-ok { color: var(--success); }
+.fb-ok { color: var(--success); position: relative; animation: fbBounce 400ms ease; }
 .fb-no { color: var(--danger-soft); }
+
+/* Sparkle burst around the praise text. The feedback node is re-created on
+   every answer, so the CSS animation replays automatically — no JS needed. */
+.fb-ok::before,
+.fb-ok::after {
+  content: "✦";
+  position: absolute;
+  font-size: 1.2rem;
+  color: var(--warning);
+  opacity: 0;
+  pointer-events: none;
+  animation: sparkleBurst 750ms ease-out forwards;
+}
+
+.fb-ok::before { left: -24px; top: -8px; }
+.fb-ok::after  { right: -24px; bottom: -8px; animation-delay: 130ms; }
+
+@keyframes fbBounce {
+  0%   { transform: scale(0.8); }
+  60%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@keyframes sparkleBurst {
+  0%   { opacity: 0; transform: scale(0.3) rotate(0deg); }
+  40%  { opacity: 1; transform: scale(1.25) rotate(45deg); }
+  100% { opacity: 0; transform: scale(0.6) rotate(90deg); }
+}
 
 /* Timed-mode answer flash: a quick ✓/✗ pop over the card. Short enough to
    keep the pace of the challenge, visible enough to register right/wrong. */
@@ -607,17 +674,21 @@ body {
   min-height: 72px;
   border: none;
   border-radius: var(--radius-md);
-  background: var(--surface);
+  background: linear-gradient(180deg, var(--surface-hi), var(--surface));
   color: var(--text);
   font-family: inherit;
   font-size: 1.8rem;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: var(--shadow-soft);
-  transition: transform 0.08s ease;
+  /* Hard bottom edge = chunky 3D key that visibly presses down. */
+  box-shadow: 0 5px 0 var(--key-edge), var(--shadow-soft);
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
 }
 
-.key:active { transform: scale(0.95); }
+.key:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--key-edge), var(--shadow-soft);
+}
 
 .key-fn { background: var(--surface-2); font-size: 1.4rem; }
 .key-go { background: var(--success); color: #fff; }

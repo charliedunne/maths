@@ -115,6 +115,17 @@ Mates.profiles = {
     return profile;
   },
 
+  /** Update a profile's name and/or avatar; returns the updated profile. */
+  update: function (id, patch) {
+    const profiles = this.list();
+    const p = profiles.find(function (x) { return x.id === id; });
+    if (!p) return null;
+    if (patch.name !== undefined) p.name = String(patch.name).trim();
+    if (patch.avatar !== undefined) p.avatar = Object.assign({}, Mates.avatar.DEFAULT, patch.avatar);
+    Mates.storage.set(PROFILES_KEY, profiles);
+    return p;
+  },
+
   /** Remove a profile and its progress data. */
   remove: function (id) {
     Mates.storage.set(PROFILES_KEY, this.list().filter(function (p) { return p.id !== id; }));

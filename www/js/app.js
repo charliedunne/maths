@@ -134,9 +134,10 @@ Mates.screens = Object.assign(Mates.screens || {}, {
         '<h1 class="title">' + Mates.t('profileSettings.title') + '</h1>' +
         '<span></span>' +
       '</header>' +
-      '<div class="card settings-row">' +
+      '<div class="card settings-row" data-action="editAvatar" role="button">' +
         Mates.avatar.render(p.avatar, 56) +
         '<div class="setting-label">' + Mates.esc(p.name) + '</div>' +
+        '<div class="edit-hint">✏️ ' + Mates.t('profileSettings.editAvatar') + '</div>' +
       '</div>' +
       '<div class="card settings-group">' +
         stepperRow('target', 'goal.target', d.timedGoal.target, 1,
@@ -245,10 +246,11 @@ Mates.screens = Object.assign(Mates.screens || {}, {
       '<div class="card lb-list">' + list + '</div>';
   },
 
-  /** Avatar builder for a new profile. */
+  /** Avatar builder; create mode (new profile) or edit mode (existing). */
   builder: function () {
     const b = Mates.state.building;
     if (!b) { Mates.router.go('profiles'); return ''; }
+    const editing = b.mode === 'edit';
 
     /* One row per part; options are mini-avatar thumbnails that live-update. */
     const partRow = function (part, labelKey, max) {
@@ -278,7 +280,7 @@ Mates.screens = Object.assign(Mates.screens || {}, {
       '<header class="header">' +
         '<button class="icon-btn" data-action="builderBack" aria-label="' +
           Mates.t('common.back') + '">←</button>' +
-        '<h1 class="title">' + Mates.t('builder.title') + '</h1>' +
+        '<h1 class="title">' + Mates.t(editing ? 'builder.title.edit' : 'builder.title') + '</h1>' +
         '<span></span>' +
       '</header>' +
 
@@ -306,7 +308,7 @@ Mates.screens = Object.assign(Mates.screens || {}, {
       partRow('freckles', 'builder.freckles', 2) +
 
       '<button class="btn btn-ghost" data-action="builderSurprise">🎲 ' + Mates.t('builder.surprise') + '</button>' +
-      '<button class="btn btn-primary" data-action="builderSave">' + Mates.t('builder.save') + '</button>';
+      '<button class="btn btn-primary" data-action="builderSave">' + Mates.t(editing ? 'builder.save.edit' : 'builder.save') + '</button>';
   },
 
   /** Settings: language, theme and sound. */
@@ -388,6 +390,14 @@ Mates.actions.profileSettingsBack = function () {
   Mates.router.go('profiles');
 };
 
+/** Open the avatar builder in edit mode for the current profile. */
+Mates.actions.editAvatar = function () {
+  const p = Mates.profiles.get(Mates.state.profileId);
+  if (!p) return;
+  Mates.state.building = { name: p.name, config: Object.assign({}, p.avatar), mode: 'edit', id: p.id };
+  Mates.router.go('builder');
+};
+
 /** Adjust a per-profile setting by a stepper delta (timed goal or bomb time). */
 Mates.actions.goalStep = function (el) {
   const id = Mates.state.profileId;
@@ -414,9 +424,11 @@ Mates.actions.addProfile = function () {
   Mates.router.go('builder');
 };
 
+/** Back: edit mode returns to profile settings, create mode to the grid. */
 Mates.actions.builderBack = function () {
+  const editing = Mates.state.building && Mates.state.building.mode === 'edit';
   Mates.state.building = null;
-  Mates.router.go('profiles');
+  Mates.router.go(editing ? 'profileSettings' : 'profiles');
 };
 
 Mates.actions.builderSetPart = function (el) {
@@ -434,6 +446,12 @@ Mates.actions.builderSurprise = function () {
 Mates.actions.builderSave = function () {
   const b = Mates.state.building;
   if (!b || !b.name.trim()) return; // name required; input stays visible
+  if (b.mode === 'edit') {
+    Mates.profiles.update(b.id, { name: b.name, avatar: b.config });
+    Mates.state.building = null;
+    Mates.router.go('profileSettings');
+    return;
+  }
   const profile = Mates.profiles.create(b.name, b.config);
   Mates.state.building = null;
   Mates.state.profileId = profile.id;

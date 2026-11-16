@@ -20,6 +20,7 @@ window.I18N.en = {
   'profiles.delete.confirm': 'Delete {name}? Their progress will be lost.',
 
   'profileSettings.title': 'Challenge goal',
+  'profileSettings.editAvatar': 'Edit avatar',
   'goal.target': 'Correct answers needed',
   'goal.time': 'Time limit (seconds)',
 
@@ -118,6 +119,8 @@ window.I18N.en = {
   'builder.freckles': 'Freckles',
   'builder.surprise': 'Surprise me',
   'builder.save': 'Start playing',
+  'builder.title.edit': 'Edit profile',
+  'builder.save.edit': 'Save',
 
   'settings.title': 'Settings',
   'settings.language': 'Language',

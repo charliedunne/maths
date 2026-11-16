@@ -547,6 +547,64 @@ check('minus clamps at time minimum (still 10 s)', page.appEl.innerHTML.includes
 page.appEl.click({ dataset: { action: 'profileSettingsBack' } });
 page.appEl.click({ dataset: { action: 'selectProfile', id: max.id } });
 
+/* ---------- Step 16: profile avatar editing (still load 1, ES) ---------- */
+console.log('step 16 (profile avatar editing)');
+
+page.appEl.click({ dataset: { action: 'switchUser' } });
+page.appEl.click({ dataset: { action: 'openProfileSettings', id: max.id } });
+check('profile settings shows tappable edit-avatar row (ES)', page.appEl.innerHTML.includes('data-action="editAvatar"') && page.appEl.innerHTML.includes('Editar avatar'));
+
+/* Enter the builder in edit mode: pre-filled name and current parts. */
+const before = page.ctx.Mates.profiles.get(max.id);
+page.appEl.click({ dataset: { action: 'editAvatar' } });
+check('builder shows edit title (ES)', page.appEl.innerHTML.includes('Editar perfil</h1>'));
+check('builder save button is "Save" in edit mode (ES)', page.appEl.innerHTML.includes('>Guardar<'));
+check('name input pre-filled with current name', page.appEl.innerHTML.includes('value="Max"'));
+
+/* Change a part and rename, then save. */
+page.appEl.click({ dataset: { action: 'builderSetPart', part: 'hat', value: '2' } });
+check('part change updates building state', page.ctx.Mates.state.building.config.hat === 2);
+page.appEl.input('Maxi');
+check('name input updates building state', page.ctx.Mates.state.building.name === 'Maxi');
+page.appEl.click({ dataset: { action: 'builderSave' } });
+const after = page.ctx.Mates.profiles.get(max.id);
+check('edit save persists avatar change and rename', after.avatar.hat === 2 && after.name === 'Maxi');
+check('edit save preserves id and createdAt', after.id === max.id && before.createdAt === after.createdAt);
+check('returns to profile settings after edit save', page.appEl.innerHTML.includes('Objetivo del reto</h1>'));
+
+/* Rename back so later sections can find "Max" by name. */
+page.appEl.click({ dataset: { action: 'editAvatar' } });
+page.appEl.input('Max');
+page.appEl.click({ dataset: { action: 'builderSave' } });
+check('rename-back persists', page.ctx.Mates.profiles.get(max.id).name === 'Max');
+
+/* Back from the builder in edit mode returns to profile settings. */
+page.appEl.click({ dataset: { action: 'editAvatar' } });
+check('builder reopens in edit mode', page.appEl.innerHTML.includes('Editar perfil</h1>'));
+page.appEl.click({ dataset: { action: 'builderBack' } });
+check('back from edit builder returns to profile settings', page.appEl.innerHTML.includes('Objetivo del reto</h1>'));
+
+/* Create-mode builder is unchanged. */
+page.appEl.click({ dataset: { action: 'profileSettingsBack' } });
+page.appEl.click({ dataset: { action: 'addProfile' } });
+check('create-mode builder keeps original title (ES)', page.appEl.innerHTML.includes('Nuevo perfil</h1>'));
+page.appEl.click({ dataset: { action: 'builderBack' } });
+
+/* profiles.update regression: partial avatars merge with defaults; unknown id is a no-op. */
+{
+  const p = page.ctx.Mates.profiles.create('Temp', { hat: 3 });
+  check('partial avatar config merges with defaults on read', page.ctx.Mates.profiles.get(p.id).avatar.hat === 3 && page.ctx.Mates.profiles.get(p.id).avatar.glasses === 0);
+  const upd = page.ctx.Mates.profiles.update(p.id, { avatar: { face: 1 } });
+  check('update with partial avatar keeps other slots at defaults', upd.avatar.face === 1 && upd.avatar.hat === 0);
+  check('update returns null for unknown id', page.ctx.Mates.profiles.update('nope', { name: 'x' }) === null);
+  page.ctx.Mates.profiles.remove(p.id);
+}
+
+/* Restore Max's original avatar so later sections stay deterministic. */
+page.ctx.Mates.profiles.update(max.id, { avatar: before.avatar });
+
+page.appEl.click({ dataset: { action: 'selectProfile', id: max.id } });
+
 /* Migration: obsolete count-based 'timed.*' high-score keys are dropped on read. */
 {
   const d = page.ctx.Mates.profileData.get(max.id);

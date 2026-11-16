@@ -20,6 +20,7 @@ window.I18N.es = {
   'profiles.delete.confirm': '¿Eliminar {name}? Se perderá su progreso.',
 
   'profileSettings.title': 'Objetivo del reto',
+  'profileSettings.editAvatar': 'Editar avatar',
   'goal.target': 'Aciertos necesarios',
   'goal.time': 'Tiempo límite (segundos)',
 
@@ -118,6 +119,8 @@ window.I18N.es = {
   'builder.freckles': 'Lunares',
   'builder.surprise': '¡Sorpréndeme!',
   'builder.save': 'Empezar a jugar',
+  'builder.title.edit': 'Editar perfil',
+  'builder.save.edit': 'Guardar',
 
   'settings.title': 'Ajustes',
   'settings.language': 'Idioma',

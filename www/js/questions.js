@@ -4,8 +4,8 @@
 window.Mates = window.Mates || {};
 
 Mates.questions = (function () {
-  const OPS = ['add', 'sub', 'mul', 'div'];
-  const SYMBOLS = { add: '+', sub: '−', mul: '×', div: '÷' };
+  const OPS = ['add', 'sub', 'mul', 'div', 'round'];
+  const SYMBOLS = { add: '+', sub: '−', mul: '×', div: '÷', round: '≈' };
 
   function randInt(min, max) { // inclusive both ends
     return min + Math.floor(Math.random() * (max - min + 1));
@@ -80,13 +80,42 @@ Mates.questions = (function () {
     return { a: d * q, b: d, answer: q };
   }
 
-  const GENERATORS = { add: genAdd, sub: genSub, mul: genMul, div: genDiv };
+  /** Rounding ("approximation"): whole numbers only, non-binary shape
+   *  { value, target, answer }. Never an exact multiple of the step (no
+   *  trivial questions); ties round up (35 -> 40); ranges are capped so
+   *  answers fit the 4-digit keypad (never 10000). */
+  function genRound(level) {
+    let target, min, max;
+    switch (level) {
+      case 1: target = 'ten'; min = 11; max = 99; break;        // within 100
+      case 2: target = 'ten'; min = 101; max = 999; break;      // 3-digit to tens
+      case 3: target = 'hundred'; min = 111; max = 999; break;  // 3-digit to hundreds
+      case 4: target = 'hundred'; min = 1001; max = 9899; break;// 4-digit to hundreds
+      default: {                                                // mixed targets
+        target = pick(['ten', 'hundred', 'thousand']);
+        if (target === 'ten') { min = 101; max = 999; }
+        else if (target === 'hundred') { min = 1001; max = 9899; }
+        else { min = 2001; max = 8999; }
+      }
+    }
+    const step = target === 'ten' ? 10 : (target === 'hundred' ? 100 : 1000);
+    let v;
+    do { v = randInt(min, max); } while (v % step === 0);
+    return { value: v, target: target, answer: Math.round(v / step) * step };
+  }
 
-  /** Generate one question. Returns { a, op, b, answer }. */
+  const GENERATORS = { add: genAdd, sub: genSub, mul: genMul, div: genDiv, round: genRound };
+
+  /** Generate one question. Returns { a, op, b, answer }, or the rounding
+   *  shape { value, target, op, answer }. */
   function generate(op, level) {
     const g = GENERATORS[op];
     if (!g) throw new Error('unknown operation: ' + op);
     const q = g(Math.min(5, Math.max(1, level)));
+    if (op === 'round') { // non-binary shape; answer already set
+      q.op = SYMBOLS.round;
+      return q;
+    }
     if (op === 'add') q.answer = q.a + q.b;
     else if (op === 'sub') q.answer = q.a - q.b;
     else if (op === 'mul') q.answer = q.a * q.b;
@@ -95,7 +124,10 @@ Mates.questions = (function () {
     return q;
   }
 
-  function key(q) { return q.a + q.op + q.b; }
+  /** Dedup key for a round; rounding questions use their own shape. */
+  function key(q) {
+    return q.value !== undefined ? q.value + q.op + q.target : q.a + q.op + q.b;
+  }
 
   /** Generate a round of `count` unique questions. */
   function generateRound(op, level, count) {

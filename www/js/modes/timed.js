@@ -1,7 +1,7 @@
 /* Mates — Goal-based timed challenge: reach N correct answers within T
  * seconds. The goal is per-profile and editable in profile settings
  * (⚙ on a profile card). Pick one operation at a fixed level, or "mixed"
- * (all four operations at level 2). The fastest time to reach the goal is
+ * (all five operations at level 2). The fastest time to reach the goal is
  * kept per profile and mode key, e.g. 'mul.3' or 'mixed'. */
 window.Mates = window.Mates || {};
 Mates.screens = Mates.screens || {};

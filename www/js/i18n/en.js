@@ -72,6 +72,9 @@ window.I18N.en = {
 
   'round.quit.confirm': 'Stop this round?',
   'round.level': 'Level {n}',
+  'round.instruction.ten': 'Round to the nearest ten',
+  'round.instruction.hundred': 'Round to the nearest hundred',
+  'round.instruction.thousand': 'Round to the nearest thousand',
 
   'results.title': 'Round complete!',
   'results.points': '+{n} points',

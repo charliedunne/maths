@@ -72,6 +72,9 @@ window.I18N.es = {
 
   'round.quit.confirm': '¿Terminar esta ronda?',
   'round.level': 'Nivel {n}',
+  'round.instruction.ten': 'Redondea a la decena más cercana',
+  'round.instruction.hundred': 'Redondea a la centena más cercana',
+  'round.instruction.thousand': 'Redondea al millar más cercano',
 
   'results.title': '¡Ronda terminada!',
   'results.points': '+{n} puntos',

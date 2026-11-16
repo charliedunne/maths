@@ -295,6 +295,95 @@ check('advanced to question 2, score still 0', s4.index === 1 && s4.score === 0)
 page.appEl.click({ dataset: { action: 'roundQuit' } });
 check('quit returns to level setup', page.appEl.innerHTML.includes('Elige un nivel'));
 
+/* ---------- Approximation (rounding): generator invariants + mode flows ---------- */
+console.log('approximation (rounding)');
+
+/* OPS now include rounding; "mixed" iterates OPS, so it can draw round. */
+check('OPS includes round with ≈ symbol', Q.OPS.includes('round') && Q.SYMBOLS.round === '≈');
+
+/* Generator invariants per level: target, value range, never an exact
+ *  multiple of the step, correct rounding (ties up), answer fits the
+ *  4-digit keypad (never 10000). */
+const ROUND_LEVELS = [
+  { lv: 1, targets: ['ten'], ranges: { ten: [11, 99] } },
+  { lv: 2, targets: ['ten'], ranges: { ten: [101, 999] } },
+  { lv: 3, targets: ['hundred'], ranges: { hundred: [111, 999] } },
+  { lv: 4, targets: ['hundred'], ranges: { hundred: [1001, 9899] } },
+  { lv: 5, targets: ['ten', 'hundred', 'thousand'],
+    ranges: { ten: [101, 999], hundred: [1001, 9899], thousand: [2001, 8999] } }
+];
+ROUND_LEVELS.forEach(({ lv, targets, ranges }) =>
+  assertAll('round L' + lv, sample('round', lv, 60), q => {
+    const step = q.target === 'ten' ? 10 : (q.target === 'hundred' ? 100 : 1000);
+    const range = ranges[q.target];
+    return targets.includes(q.target) && q.value >= range[0] && q.value <= range[1] &&
+      q.value % step !== 0 && q.op === '≈' &&
+      q.answer === Math.round(q.value / step) * step && q.answer <= 9999;
+  }));
+
+/* L5 must actually draw all three targets. */
+check('round L5 mixes ten/hundred/thousand',
+  new Set(sample('round', 5, 200).map(q => q.target)).size === 3);
+
+/* A round of 10 unique rounding questions (non-binary dedup key). */
+const roundQs = Q.generateRound('round', 3, 10);
+check('rounding round has 10 unique questions',
+  roundQs.length === 10 && new Set(roundQs.map(q => q.value + q.op + q.target)).size === 10);
+
+/* Profile data defaults cover the new operation. */
+{
+  const d = page.ctx.Mates.profileData.get(max.id);
+  check('profile data has stats.round and adaptiveLevel.round',
+    d.stats.round.answered === 0 && d.adaptiveLevel.round === 2);
+}
+
+/* Instruction keys exist in both catalogs. They are built dynamically
+ *  ('round.instruction.' + target), so the literal-call parity matcher
+ *  above does not cover them — check explicitly. */
+{
+  const enSrc = readFileSync(path.join(WEB, 'js/i18n/en.js'), 'utf8');
+  const esSrc = readFileSync(path.join(WEB, 'js/i18n/es.js'), 'utf8');
+  ['ten', 'hundred', 'thousand'].forEach(t => {
+    const re = new RegExp("'round\\.instruction\\." + t + "':\\s*'[^']+'");
+    check('i18n round.instruction.' + t + ' in EN + ES', re.test(enSrc) && re.test(esSrc));
+  });
+}
+
+/* Level-mode flow with op=round: hint line + "≈ ?" question render.
+ *  Still on the level setup screen (the quit above landed there). */
+check('level setup shows ≈ button for round', page.appEl.innerHTML.includes('data-op="round"'));
+page.appEl.click({ dataset: { action: 'levelSetOp', op: 'round' } });
+page.appEl.click({ dataset: { action: 'levelSetLevel', value: '1' } });
+page.appEl.click({ dataset: { action: 'levelStart' } });
+{
+  const s = page.ctx.Mates.round.peek();
+  check('round question renders with instruction hint (ES)',
+    page.appEl.innerHTML.includes('Redondea a la decena más cercana') &&
+    page.appEl.innerHTML.includes(s.question.value + ' ≈ ?'));
+}
+for (let i = 0; i < 10; i++) {
+  const s = page.ctx.Mates.round.peek();
+  String(s.question.answer).split('').forEach(dg =>
+    page.appEl.click({ dataset: { action: 'keypad', key: dg } }));
+  page.appEl.click({ dataset: { action: 'keypad', key: 'enter' } });
+  page.flushTimers();
+}
+check('rounding results show 10 / 10', page.appEl.innerHTML.includes('10 / 10'));
+{
+  const d = page.ctx.Mates.profileData.get(max.id);
+  check('stats.round + points recorded (200 total)',
+    d.stats.round.answered === 10 && d.stats.round.correct === 10 && d.points === 200);
+}
+page.appEl.click({ dataset: { action: 'resultsContinue' } });
+
+/* Adaptive and timed pickers also offer ≈ (they iterate OPS + SYMBOLS). */
+page.appEl.click({ dataset: { action: 'adaptiveEnter' } });
+check('adaptive setup shows ≈ button for round', page.appEl.innerHTML.includes('data-op="round"'));
+page.appEl.click({ dataset: { action: 'backToHome' } });
+page.appEl.click({ dataset: { action: 'timedEnter' } });
+check('timed setup shows ≈ button for round', page.appEl.innerHTML.includes('data-op="round"'));
+page.appEl.click({ dataset: { action: 'backToHome' } });
+
 /* ---------- Step 4: adaptive mode (still load 1, ES) ---------- */
 console.log('step 4 (adaptive mode)');
 

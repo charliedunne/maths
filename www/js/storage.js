@@ -114,7 +114,7 @@ Mates.profiles = {
 };
 
 /* ---------- Per-profile progress data ---------- */
-const OPS = ['add', 'sub', 'mul', 'div'];
+const OPS = ['add', 'sub', 'mul', 'div', 'round'];
 
 function profileDataDefaults() {
   const stats = {};
@@ -127,7 +127,7 @@ function profileDataDefaults() {
     badges: [],
     stats: stats,
     highScores: {},         // legacy count-based timed records (no longer written)
-    adaptiveLevel: { add: 2, sub: 2, mul: 2, div: 2 },
+    adaptiveLevel: { add: 2, sub: 2, mul: 2, div: 2, round: 2 },
     timedGoal: { target: 8, time: 45 }, // goal-based challenge: N correct in T seconds
     timedBest: {},           // fastest times (seconds) to reach the goal, keyed like 'mul.3' or 'mixed'
     bombTime: 60,            // Bomb Race countdown per quest (seconds)
@@ -181,7 +181,7 @@ Mates.profileData = {
     OPS.forEach(function (op) {
       d.stats[op] = Object.assign({ answered: 0, correct: 0 }, (saved.stats || {})[op]);
     });
-    d.adaptiveLevel = Object.assign({ add: 2, sub: 2, mul: 2, div: 2 }, saved.adaptiveLevel);
+    d.adaptiveLevel = Object.assign({ add: 2, sub: 2, mul: 2, div: 2, round: 2 }, saved.adaptiveLevel);
     d.timedGoal = Object.assign({ target: 8, time: 45 }, saved.timedGoal);
     d.timedBest = Object.assign({}, saved.timedBest);
     d.bombTime = Mates.bombTime.clamp(saved.bombTime);
